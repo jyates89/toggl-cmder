@@ -1,6 +1,7 @@
 from json import JSONEncoder,JSONDecoder
 
 class Project(object):
+    API_URL = ""
     def __init__(self, **kwargs):
         self.__name = kwargs.get('name')
         self.__workspace_id = kwargs.get('workspace_id')
