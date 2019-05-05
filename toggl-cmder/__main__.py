@@ -7,4 +7,6 @@ projects_url = "https://www.toggl.com/api/v8/workspaces/{}/projects"
 if __name__ == "__main__":
     instance = interface.Interface(api_token=token)
     for workspace in instance.download_workspaces():
-        print(workspace.id)
+        for project in instance.download_projects(workspace):
+            print(type(project.project_id))
+            print(type(project.created))

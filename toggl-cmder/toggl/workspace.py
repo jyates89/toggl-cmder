@@ -3,7 +3,7 @@ from toggl import project
 
 class Workspace(object):
     QUERY_API_URL = "https://www.toggl.com/api/v8/workspaces"
-    QUERY_PROJECTS = QUERY_API_URL + "{}/projects"
+    QUERY_PROJECTS = QUERY_API_URL + "/{}/projects"
 
     def __init__(self, **kwargs):
         self.__id = kwargs.get('id')
