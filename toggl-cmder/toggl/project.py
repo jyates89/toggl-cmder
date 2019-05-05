@@ -2,13 +2,15 @@
 from datetime import datetime
 
 class Project(object):
-    API_URL = ""
+    PROJECT_API_URL = ""
+
     def __init__(self, **kwargs):
         self.__name = kwargs.get('name')
         self.__workspace_id = kwargs.get('workspace_id')
-        self.__project_id = kwargs.get('project_id')
+        self.__id = kwargs.get('project_id')
         self.__color = kwargs.get('color', 0)
         self.__hex_color = kwargs.get('hex_color', 0)
+
         # strptime returns a tuple, so we unpack it here
         self.__created, = datetime.strptime(kwargs.get('created'), '%Y-%m-%dT%H:%M:%S%z'),
 
@@ -23,8 +25,8 @@ class Project(object):
         return self.__workspace_id
 
     @property
-    def project_id(self):
-        return self.__project_id
+    def id(self):
+        return self.__id
 
     @property
     def color(self):
