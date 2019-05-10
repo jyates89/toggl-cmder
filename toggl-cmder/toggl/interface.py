@@ -11,6 +11,7 @@ from toggl import tag_decoder
 from toggl import tag
 
 from toggl import time_entry_decoder
+from toggl import time_entry_encoder
 from toggl import time_entry
 
 class Interface(object):
@@ -47,10 +48,8 @@ class Interface(object):
 
         return tags
 
-    def download_time_entries(self):
-        pass
-
-    def create_workspace(self):
+    def download_time_entries(self, incoming_workspace,
+                              incoming_project, incoming_tags):
         pass
 
     def create_project(self):
@@ -58,6 +57,15 @@ class Interface(object):
 
     def create_tag(self):
         pass
+
+    def create_time_entry(self, incoming_workspace,
+                          incoming_project, incoming_tags,
+                          description):
+        entry = time_entry.TimeEntry.fromComponents(
+            incoming_workspace, incoming_project,
+            incoming_tags, description,
+        )
+        print(json.dumps(entry, cls=time_entry_encoder.TimeEntryEncoder))
 
     def start_time_entry(self):
         pass

@@ -1,26 +1,42 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 class TimeEntry(object):
 
+    @staticmethod
+    def fromComponents(incoming_workspace,
+                       incoming_project,
+                       incoming_tags,
+                       description):
+        return TimeEntry(
+            id=None,
+            wid=incoming_workspace.id,
+            pid=incoming_project.id,
+            description=description,
+            start=datetime.now(timezone.utc).isoformat(),
+            tags=incoming_tags,
+        )
+
     def __init__(self, **kwargs):
-        self.__id = kwargs.get('id')
-        self.__workspace_id = kwargs.get('wid')
+        self.__id = kwargs.get('id', None)
+        self.__workspace_id = kwargs.get('wid', None)
+
         self.__project_id = kwargs.get('pid')
-
         self.__description = kwargs.get('description')
+        self.__start_time, = datetime.fromisoformat(kwargs.get('start')),
 
-        self.__start_time, = datetime.strptime(kwargs.get('start'),
-                                               '%Y-%m-%dT%H:%M:%S%z'),
+        self.__duration = kwargs.get('duration', 0)
+        self.__is_running = True if self.__duration < 0 else False
 
-        self.__is_running = False
+        if self.__is_running:
+            self.__duration = datetime.now(timezone.utc) + self.__duration
 
         try:
             self.__stop_time, = datetime.strptime(kwargs.get('stop'),
                                                   '%Y-%m-%dT%H:%M:%S%z'),
-        except ValueError:
+        except TypeError:
             self.__stop_time = None
 
-        self.__duration = kwargs.get('duration')
+
 
         self.__tags = kwargs.get('tags', [])
 

@@ -7,10 +7,10 @@ class TimeEntryEncoder(JSONEncoder):
         if isinstance(o, time_entry.TimeEntry):
             return { 'time_entry' :
                          {
-                             'id': o.id,
-                             'wid': o.workspace_id,
                              'pid': o.project_id,
                              'description': o.description,
-                             'start': o.start_time.isoformat()
+                             'start': o.start_time.isoformat(),
+                             'tag': o.tags,
+                             'created_with': 'toggl_cmder'
                          }}
         return super(TimeEntryEncoder, self).default(o)
