@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 class TimeEntry(object):
+    API_URL = "https://www.toggl.com/api/v8/time_entries/current"
 
     @staticmethod
     def fromComponents(incoming_workspace,
@@ -28,7 +29,7 @@ class TimeEntry(object):
         self.__is_running = True if self.__duration < 0 else False
 
         if self.__is_running:
-            self.__duration = datetime.now(timezone.utc) + self.__duration
+            self.__duration = datetime.now(timezone.utc).second + self.__duration
 
         try:
             self.__stop_time, = datetime.strptime(kwargs.get('stop'),
