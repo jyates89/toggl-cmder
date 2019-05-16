@@ -84,17 +84,17 @@ if __name__ == "__main__":
     if args.token_reset:
         instance.reset_user_token()
 
-
     workspaces = []
     projects = []
     tags = []
 
     for workspace in instance.download_workspaces():
+        workspaces.append(workspace)
         for project in instance.download_projects(workspace):
-            print(type(project.id))
-            print(type(project.created))
+            projects.append(project)
         for tag in instance.download_tags(workspace):
             tags.append(tag)
+
     user_data = instance.download_userdata()
 
 

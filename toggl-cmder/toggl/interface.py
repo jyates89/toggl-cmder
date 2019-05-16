@@ -138,6 +138,15 @@ class Interface(object):
     def create_tag(self):
         pass
 
+    def create_time_entry(self, incoming_workspace,
+                          incoming_project, incoming_tags,
+                          description):
+        entry = time_entry.TimeEntry.fromComponents(
+            incoming_workspace, incoming_project,
+            incoming_tags, description,
+        )
+        print(json.dumps(entry, cls=time_entry_encoder.TimeEntryEncoder))
+
     def start_time_entry(self):
         pass
 
