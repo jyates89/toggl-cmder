@@ -2,7 +2,7 @@ from json import JSONDecoder
 
 from toggl import tag
 
-class TagResponseDecoder(JSONDecoder):
+class TagDecoder(JSONDecoder):
     def __init__(self, *args, **kwargs):
         JSONDecoder.__init__(self,
                              object_hook=self.object_hook,
