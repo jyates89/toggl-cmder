@@ -5,11 +5,13 @@ from toggl import workspace_decoder
 from toggl import workspace
 
 from toggl import project_decoder
+from toggl import project_encoder
 from toggl import project
 
 from toggl import tag_decoder
 from toggl import tag
 
+from toggl import time_entry_decoder
 from toggl import time_entry_encoder
 from toggl import time_entry
 
@@ -23,21 +25,23 @@ class Interface(object):
         self.__auth = HTTPBasicAuth(kwargs['api_token'], 'api_token')
 
     def test_connection(self):
-        reply = requests.get(user.User.USER_API_URL,
+        reply = requests.get(user.User.api_url(),
                              auth=self.__auth)
         if reply.reason == 'Forbidden':
             return False
         return True
 
     def reset_user_token(self):
-        reply = requests.post(user.User.USER_TOKEN_RESET,
+        reply = requests.post(user.User.api_token_reset_url(),
                               auth=self.__auth)
-        print(reply.text)
+        reply.raise_for_status()
+        return reply.text
 
-    def download_userdata(self):
+    def download_user_data(self):
         reply = requests.get(
-            user.User.USER_API_RELATED_DATA_URL,
+            user.User.api_user_url(),
             auth=self.__auth)
+        reply.raise_for_status()
 
         # json decoder doesn't work properly
         data_block = reply.json()['data']
@@ -85,7 +89,7 @@ class Interface(object):
                 time_entry.TimeEntry(
                     id=t['id'],
                     wid=t['wid'],
-                    pid=t['pid'],
+                    pid=t.get('pid', None),
                     description=t['description'],
                     start=t['start'],
                     stop=t.get('stop', None),
@@ -105,14 +109,16 @@ class Interface(object):
         )
 
     def download_workspaces(self):
-        reply =  requests.get(workspace.Workspace.WORKSPACE_API_URL,
+        reply =  requests.get(workspace.Workspace.api_url(),
                             auth=self.__auth)
+        reply.raise_for_status()
         return json.loads(reply.text,
                           cls=workspace_decoder.WorkspaceDecoder)
 
     def download_projects(self, incoming_workspace):
         reply = requests.get(incoming_workspace.projects_url,
                              auth=self.__auth)
+        reply.raise_for_status()
         projects = []
         for project in json.loads(reply.text,
                                   cls=project_decoder.ProjectDecoder):
@@ -124,6 +130,7 @@ class Interface(object):
     def download_tags(self, incoming_workspace):
         reply = requests.get(incoming_workspace.tags_url,
                              auth=self.__auth)
+        reply.raise_for_status()
         tags = []
         for tag in json.loads(reply.text,
                               cls=tag_decoder.TagDecoder):
@@ -132,20 +139,32 @@ class Interface(object):
 
         return tags
 
-    def create_project(self):
-        pass
+    def get_current_entry(self):
+        reply = requests.get(time_entry.TimeEntry.current_entry_api_url(),
+                             auth=self.__auth)
+        reply.raise_for_status()
+        return json.loads(reply.text,
+                          cls=time_entry_decoder.TimeEntryDecoder)
+
+    def create_project(self, workspace):
+        new_project = project.Project(
+            name='TestProject',
+            workspace_id=workspace.id,
+        )
+        data = json.dumps(new_project, cls=project_encoder.ProjectEncoder)
+        result = requests.post(new_project.api_url(),
+                               data=data)
+        result.raise_for_status()
+
+
+
 
     def create_tag(self):
+
         pass
 
-    def create_time_entry(self, incoming_workspace,
-                          incoming_project, incoming_tags,
-                          description):
-        entry = time_entry.TimeEntry.fromComponents(
-            incoming_workspace, incoming_project,
-            incoming_tags, description,
-        )
-        print(json.dumps(entry, cls=time_entry_encoder.TimeEntryEncoder))
+    def create_time_entry(self):
+        pass
 
     def start_time_entry(self):
         pass

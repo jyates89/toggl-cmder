@@ -1,9 +1,6 @@
 
-from toggl import project
 
 class Workspace(object):
-    WORKSPACE_API_URL = "https://www.toggl.com/api/v8/workspaces"
-
     def __init__(self, **kwargs):
         self.__id = kwargs.get('id')
         self.__name = kwargs.get('name')
@@ -11,11 +8,6 @@ class Workspace(object):
         self.__projects = kwargs.get('projects', [None])
         self.__tags = kwargs.get('tags', [None])
         self.__time_entries = kwargs.get('time_entries', [None])
-
-        self.__QUERY_API_URL = self.WORKSPACE_API_URL + "/{}".format(
-            self.__id
-        )
-
 
     @property
     def id(self):
@@ -25,10 +17,18 @@ class Workspace(object):
     def name(self):
         return self.__name
 
+    @staticmethod
+    def api_url():
+        return "https://www.toggl.com/api/v8/workspaces"
+
     @property
     def projects_url(self):
-        return self.__QUERY_API_URL + "/projects"
+        return Workspace.api_url() + "/{}/projects".format(
+            self.__id
+        )
 
     @property
     def tags_url(self):
-        return self.__QUERY_API_URL + "/tags"
+        return Workspace.api_url() + "/{}/tags".format(
+            self.__id
+        )
