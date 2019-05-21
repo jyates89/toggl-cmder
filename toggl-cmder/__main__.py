@@ -4,9 +4,11 @@ import logging
 import sys
 
 from toggl import interface
+from toggl import time_entry_builder
 
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(
+        prog='python toggl-cmder',
         description='Control toggl via the REST API.')
 
     arg_parser.add_argument('--token', type=str,
@@ -61,7 +63,7 @@ if __name__ == "__main__":
 
     logger = logging.getLogger()
     log_file_handle = logging.FileHandler('toggl-cmder.log')
-    log_stream_handle = logging.StreamHandler()
+    log_stream_handle = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter(
         "%(asctime)s: %(levelname)s: %(module)s: %(lineno)d: %(message)s",
         "%Y-%m-%dT%H:%M:%S")
@@ -85,10 +87,10 @@ if __name__ == "__main__":
     else:
         try:
             token_file = open('.api_token', 'r')
-            token = token_file.read()
+            token = token_file.read().rstrip()
             token_file.close()
         except FileNotFoundError:
-            logger.info("please create the token file '.api_token")
+            logger.info("please create the token file '.api_token'")
             exit(1)
 
     instance = interface.Interface(api_token=token,
@@ -108,13 +110,35 @@ if __name__ == "__main__":
     else:
         logger.info("updating token file")
         file = open('.api_token', 'w')
-        file.write(user_data.api_token)
+        file.write(token.replace('"', '').rstrip())
         file.close()
 
-    if args.parser_name == 'start-timer':
-        print('start-timer called')
-    elif args.parser_name == 'add-tag':
-        print('add-tag called')
-    elif args.parser_name == 'add-project':
+    if args.stop_timer:
+        logger.info("searching for current timer")
+        time_entry = instance.get_current_entry()
+        if time_entry:
+            logger.info("stopping entry: description = '{}'".format(
+                time_entry.description
+            ))
+            instance.stop_time_entry(time_entry)
+        else:
+            logging.info("no running entry")
 
-        print('add-project called')
+    if args.parser_name == 'start-timer':
+        try:
+            user_data.find_time_entry(
+                args.description,
+                args.workspace,
+                args.project)
+            logger.warning('time entry already exists')
+        except ValueError:
+            workspace = user_data.find_workspace(args.workspace)
+            project = user_data.find_user_project(args.project)
+            time_entry = time_entry_builder.TimeEntryBuilder.from_now(
+                workspace, project, args.description, args.tags.split(','))
+            instance.create_time_entry(time_entry)
+
+    elif args.parser_name == 'add-tag':
+        pass
+    elif args.parser_name == 'add-project':
+        pass

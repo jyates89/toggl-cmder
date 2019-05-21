@@ -25,26 +25,26 @@ class TimeEntry(object):
         self.__tags = kwargs.get('tags', [])
 
     @staticmethod
-    def entry_api_url():
+    def api_url():
         return "https://www.toggl.com/api/v8/time_entries"
 
     @staticmethod
-    def entry_start_api_url():
-        return TimeEntry.entry_api_url() + "/start"
+    def api_start_entry_url():
+        return TimeEntry.api_url() + "/start"
 
-    def entry_stop_api_url(self):
-        return self.entry_api_url() + "/{}/stop".format(
+    def api_stop_entry_url(self):
+        return self.api_url() + "/{}/stop".format(
             self.__id
         )
 
-    def entry_details_api_url(self):
-        return self.entry_api_url() + "/{}".format(
+    def api_entry_details_url(self):
+        return self.api_url() + "/{}".format(
             self.__id
         )
 
     @staticmethod
-    def current_entry_api_url():
-        return TimeEntry.entry_api_url() + "/current"
+    def api_current_entry_url():
+        return TimeEntry.api_url() + "/current"
 
 
     @property

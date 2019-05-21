@@ -140,7 +140,7 @@ class Interface(object):
         return tags
 
     def get_current_entry(self):
-        reply = requests.get(time_entry.TimeEntry.current_entry_api_url(),
+        reply = requests.get(time_entry.TimeEntry.api_current_entry_url(),
                              auth=self.__auth)
         reply.raise_for_status()
         return json.loads(reply.text,
@@ -163,11 +163,14 @@ class Interface(object):
 
         pass
 
-    def create_time_entry(self):
-        pass
+    def start_time_entry(self, time_entry):
+        data = json.dumps(time_entry, cls=time_entry_encoder.TimeEntryEncoder)
+        result = requests.post(time_entry.api_url(),
+                               data=data,
+                               auth=self.__auth)
+        result.raise_for_status()
 
-    def start_time_entry(self):
-        pass
-
-    def stop_time_entry(self):
-        pass
+    def stop_time_entry(self, time_entry):
+        result = requests.put(time_entry.api_stop_entry_url(),
+                              auth=self.__auth)
+        result.raise_for_status()
