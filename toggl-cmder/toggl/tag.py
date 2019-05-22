@@ -26,3 +26,10 @@ class Tag(object):
         return Tag.api_url() + "/{}".format(
             self.__id
         )
+
+    def __str__(self):
+        return "{},{},{}".format(
+            self.__name,
+            self.__workspace_id,
+            self.__id
+        )

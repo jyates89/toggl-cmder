@@ -3,8 +3,13 @@ import argparse
 import logging
 import sys
 
+from tabulate import tabulate
+
 from toggl import interface
+
 from toggl import time_entry_builder
+from toggl import tag_builder
+from toggl import project_builder
 
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(
@@ -18,6 +23,15 @@ if __name__ == "__main__":
                             help="Reset the API token used for toggl.")
     arg_parser.add_argument('--verbosity', '-v', action='count',
                             help='Increase verbosity.', default=0)
+
+    arg_parser.add_argument('--list-projects',
+                            action='store_true')
+    arg_parser.add_argument('--list-tags',
+                            action='store_true')
+    arg_parser.add_argument('--list-time-entries',
+                            action='store_true')
+    arg_parser.add_argument('--list-workspaces',
+                            action='store_true')
 
     sub_arg_parsers = arg_parser.add_subparsers(dest='parser_name')
 
@@ -136,9 +150,55 @@ if __name__ == "__main__":
             project = user_data.find_user_project(args.project)
             time_entry = time_entry_builder.TimeEntryBuilder.from_now(
                 workspace, project, args.description, args.tags.split(','))
-            instance.create_time_entry(time_entry)
+            instance.start_time_entry(time_entry)
 
     elif args.parser_name == 'add-tag':
-        pass
+        try:
+            user_data.find_tag(
+                args.name,
+                args.workspace)
+        except ValueError:
+            workspace = user_data.find_workspace(args.workspace)
+            tag = tag_builder.TagBuilder.from_name_and_workspace(
+                args.name,
+                workspace)
+            instance.create_tag(tag)
+
     elif args.parser_name == 'add-project':
-        pass
+        try:
+            user_data.find_project(
+                args.project,
+                args.workspace)
+        except ValueError:
+            workspace = user_data.find_workspace(args.workspace)
+            project = project_builder.ProjectBuilder.from_name_and_workspace(
+                args.name, workspace)
+            instance.create_project(project)
+
+    if args.list_workspaces:
+        logger.info("\n{}".format(tabulate(
+            [s.__str__().split(',') for s in user_data.workspaces],
+            headers=["name", "id"],
+            tablefmt="grid"
+        )))
+
+    if args.list_projects:
+        logger.info("\n{}".format(tabulate(
+            [s.__str__().split(',') for s in user_data.projects],
+            headers=["name","workspace","id","color","hex"],
+            tablefmt="grid"
+        )))
+
+    if args.list_tags:
+        logger.info("\n{}".format(tabulate(
+            [s.__str__().split(',') for s in user_data.tags],
+            headers=["name", "workspace", "id"],
+            tablefmt="grid"
+        )))
+
+    if args.list_time_entries:
+        logger.info("\n{}".format(tabulate(
+            [s.__str__().split(',') for s in user_data.time_entries],
+            headers=["description", "id", "project", "workspace", "duration"],
+            tablefmt="grid"
+        )))

@@ -1,4 +1,4 @@
-
+from tabulate import tabulate
 from datetime import datetime
 
 class Project(object):
@@ -66,4 +66,13 @@ class Project(object):
     def api_project_details_url(self):
         return Project.api_url() + "/{}".format(
             self.__id
+        )
+
+    def __str__(self):
+        return "{},{},{},{},{}".format(
+            self.__name,
+            self.__workspace_id,
+            self.__id,
+            self.__color,
+            self.__hex_color
         )

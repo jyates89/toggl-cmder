@@ -8,3 +8,11 @@ class TagBuilder(object):
             id=None,
             name=tag_name,
             workspace_id=None)
+
+    @staticmethod
+    def from_name_and_workspace(tag_name, workspace):
+        return tag.Tag(
+            id=None,
+            name=tag_name,
+            workspace_id=workspace.id
+        )

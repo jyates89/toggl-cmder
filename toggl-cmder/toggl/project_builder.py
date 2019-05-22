@@ -2,12 +2,10 @@
 from toggl import project
 
 class ProjectBuilder(object):
-    def __init__(self):
-        self.__workspaces = [None]
-        self.__projects = [None]
 
-    def get_new(self, workspace, name):
-        return project.Project()
-
-    def get_existing(self):
-        return project.Project()
+    @staticmethod
+    def from_name_and_workspace(name, workspace):
+        return project.Project(
+            name=name,
+            workspace_id=workspace.id
+        )

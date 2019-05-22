@@ -32,3 +32,9 @@ class Workspace(object):
         return Workspace.api_url() + "/{}/tags".format(
             self.__id
         )
+
+    def __str__(self):
+        return "{},{}".format(
+            self.__name,
+            self.__id
+        )

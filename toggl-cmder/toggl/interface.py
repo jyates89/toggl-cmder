@@ -9,6 +9,7 @@ from toggl import project_encoder
 from toggl import project
 
 from toggl import tag_decoder
+from toggl import tag_encoder
 from toggl import tag
 
 from toggl import time_entry_decoder
@@ -146,22 +147,19 @@ class Interface(object):
         return json.loads(reply.text,
                           cls=time_entry_decoder.TimeEntryDecoder)
 
-    def create_project(self, workspace):
-        new_project = project.Project(
-            name='TestProject',
-            workspace_id=workspace.id,
-        )
-        data = json.dumps(new_project, cls=project_encoder.ProjectEncoder)
-        result = requests.post(new_project.api_url(),
-                               data=data)
+    def create_project(self, project):
+        data = json.dumps(project, cls=project_encoder.ProjectEncoder)
+        result = requests.post(project.api_url(),
+                               data=data,
+                               auth=self.__auth)
         result.raise_for_status()
 
-
-
-
-    def create_tag(self):
-
-        pass
+    def create_tag(self, tag):
+        data = json.dumps(tag, cls=tag_encoder.TagEncoder)
+        result = requests.post(tag.api_url(),
+                               data=data,
+                               auth=self.__auth)
+        result.raise_for_status()
 
     def start_time_entry(self, time_entry):
         data = json.dumps(time_entry, cls=time_entry_encoder.TimeEntryEncoder)
