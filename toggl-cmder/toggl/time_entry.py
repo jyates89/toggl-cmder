@@ -84,10 +84,11 @@ class TimeEntry(object):
         return self.__tags
 
     def __str__(self):
-        return "{},{},{},{},{}".format(
+        return "{},{},{},{},{},{}".format(
             self.__description,
             self.__id,
             self.__project_id,
             self.__workspace_id,
             self.__duration,
+            [tag for tag in self.__tags]
         )

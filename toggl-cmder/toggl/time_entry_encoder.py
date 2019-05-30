@@ -5,7 +5,12 @@ from toggl import time_entry
 class TimeEntryEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, time_entry.TimeEntry):
-            return { 'time_entry' :
+            if o.stop_time is not None:
+                return { 'time_entry' : {
+                    '': ''
+                }}
+            else:
+                return { 'time_entry' :
                          {
                              'pid': o.project_id,
                              'description': o.description,

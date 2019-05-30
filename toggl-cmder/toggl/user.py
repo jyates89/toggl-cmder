@@ -53,6 +53,12 @@ class User(object):
     def projects(self):
         return self.__projects
 
+    def get_project_from_id(self, id):
+        return next(filter(
+            lambda project: project.id == id,
+            self.__projects
+        ))
+
     def find_project(self, project_name, workspace_name):
         workspace = self.find_workspace(workspace_name)
         project = next(filter(
@@ -103,6 +109,12 @@ class User(object):
     @property
     def workspaces(self):
         return self.__workspaces
+
+    def get_workspace_from_id(self, id):
+        return next(filter(
+            lambda workspace: workspace.id == id,
+            self.__workspaces
+        ))
 
     def find_workspace(self, workspace_name):
         workspace = next(filter(

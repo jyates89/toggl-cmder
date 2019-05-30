@@ -38,7 +38,8 @@ if __name__ == "__main__":
     start_timer_args = sub_arg_parsers.add_parser("start-timer",
                                                   help="Start a new toggl timer.")
     start_timer_args.add_argument('--description',
-                                  help="Description of the timer.")
+                                  help="Description of the timer.",
+                                  required=True)
     start_timer_args.add_argument('--project',
                                   help='Project for this timer.')
     start_timer_args.add_argument('--tags',
@@ -51,6 +52,27 @@ if __name__ == "__main__":
     arg_parser.add_argument('--stop-timer',
                             action='store_true',
                             help='Stop the current timer.')
+
+    add_timer_args = sub_arg_parsers.add_parser('add-timer',
+                                                help='Create a new timer.')
+    add_timer_args.add_argument('--description',
+                                help="Description of the timer.",
+                                required=True)
+    add_timer_args.add_argument('--project',
+                                help="Project for this timer.")
+    add_timer_args.add_argument('--workspace',
+                                help="Workspace for this timer.")
+    add_timer_args.add_argument('--tags',
+                                help="Tags for this timer.",
+                                nargs='?',
+                                default=[])
+    add_timer_args.add_argument('--start',
+                                help="Start time for this timer.",
+                                required=True)
+    add_timer_args.add_argument('--stop',
+                                help="Stop time for this timer.",
+                                required=True)
+
 
     add_project_args = sub_arg_parsers.add_parser('add-project',
                                                   help='Create a new project.')
@@ -69,6 +91,10 @@ if __name__ == "__main__":
     add_tag_args.add_argument('--workspace',
                               help='Workspace where this tag belongs.',
                               required=True)
+
+    arg_parser.add_argument('--current',
+                            help="Get current timer.",
+                            action='store_true')
 
     args = arg_parser.parse_args()
     if len(sys.argv) == 1:
@@ -127,6 +153,10 @@ if __name__ == "__main__":
         file.write(token.replace('"', '').rstrip())
         file.close()
 
+    if args.current:
+        time_entry = instance.get_current_entry()
+        logger.info(time_entry)
+
     if args.stop_timer:
         logger.info("searching for current timer")
         time_entry = instance.get_current_entry()
@@ -140,11 +170,12 @@ if __name__ == "__main__":
 
     if args.parser_name == 'start-timer':
         try:
-            user_data.find_time_entry(
+            time_entry = user_data.find_time_entry(
                 args.description,
                 args.workspace,
                 args.project)
             logger.warning('time entry already exists')
+            instance.start_time_entry(time_entry)
         except ValueError:
             workspace = user_data.find_workspace(args.workspace)
             project = user_data.find_user_project(args.project)
