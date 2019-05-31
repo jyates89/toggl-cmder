@@ -91,7 +91,7 @@ class Interface(object):
                     id=t['id'],
                     wid=t['wid'],
                     pid=t.get('pid', None),
-                    description=t['description'],
+                    description=t.get('description', "None provided"),
                     start=t['start'],
                     stop=t.get('stop', None),
                     duration=t['duration'],

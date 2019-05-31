@@ -16,7 +16,7 @@ class TimeEntryDecoder(JSONDecoder):
             id=obj.get('id'),
             wid=obj.get('wid'),
             pid=obj.get('pid'),
-            description=obj.get('description'),
+            description=obj.get('description', "None provided."),
             start=obj.get('start'),
             duration=obj.get('duration'),
             stop=obj.get('stop', None),

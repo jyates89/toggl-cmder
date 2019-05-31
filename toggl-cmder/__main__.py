@@ -22,7 +22,7 @@ if __name__ == "__main__":
                             action='store_true',
                             help="Reset the API token used for toggl.")
     arg_parser.add_argument('--verbosity', '-v', action='count',
-                            help='Increase verbosity.', default=0)
+                            help='Increase verbosity.', default=3)
 
     arg_parser.add_argument('--list-projects',
                             action='store_true')
@@ -104,7 +104,7 @@ if __name__ == "__main__":
             token = token_file.read().rstrip()
             token_file.close()
         except FileNotFoundError:
-            logger.info("please create the token file '.api_token'")
+            logger.critical("please create the token file '.api_token'")
             exit(1)
 
     instance = interface.Interface(api_token=token,
