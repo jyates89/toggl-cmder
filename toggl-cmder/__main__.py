@@ -119,7 +119,7 @@ if __name__ == "__main__":
         instance = interface.Interface(api_token=token,
                                        logger=logger)
 
-    if token == user_data.api_token:
+    if token == user_data.api_token and not args.token:
         logger.info("no token update needed")
     else:
         logger.info("updating token file")

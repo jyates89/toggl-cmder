@@ -17,6 +17,7 @@ from toggl import time_entry_encoder
 from toggl import time_entry
 
 from toggl import user
+from toggl import user_decoder
 
 class Interface(object):
     def __init__(self, **kwargs):
@@ -44,70 +45,8 @@ class Interface(object):
             auth=self.__auth)
         reply.raise_for_status()
 
-        # json decoder doesn't work properly
-        data_block = reply.json()['data']
-
-        user_projects = []
-        projects = data_block['projects']
-        for p in projects:
-            user_projects.append(
-                project.Project(
-                    name=p['name'],
-                    workspace_id=p['wid'],
-                    project_id=p['id'],
-                    created=p['created_at'],
-                    color=p['color'],
-                    hex_color=p['hex_color']
-                )
-            )
-
-        user_workspaces = []
-        workspaces = data_block['workspaces']
-        for w in workspaces:
-            user_workspaces.append(
-                workspace.Workspace(
-                    id=w['id'],
-                    name=w['name'],
-                )
-            )
-
-        user_tags = []
-        tags = data_block['tags']
-        for t in tags:
-            user_tags.append(
-                tag.Tag(
-                    id=t['id'],
-                    name=t['name'],
-                    workspace_id=t['wid'],
-                    created=t['at']
-                )
-            )
-
-        user_time_entries = []
-        time_entries = data_block['time_entries']
-        for t in time_entries:
-            user_time_entries.append(
-                time_entry.TimeEntry(
-                    id=t['id'],
-                    wid=t['wid'],
-                    pid=t.get('pid', None),
-                    description=t.get('description', "None provided"),
-                    start=t['start'],
-                    stop=t.get('stop', None),
-                    duration=t['duration'],
-                    tags=t.get('tags', [])
-                )
-            )
-
-        return user.User(
-            id=data_block['id'],
-            full_name=data_block['fullname'],
-            api_token=data_block['api_token'],
-            tags=user_tags,
-            time_entries=user_time_entries,
-            workspaces=user_workspaces,
-            projects=user_projects
-        )
+        return json.loads(reply.text,
+                          cls=user_decoder.UserDecoder)
 
     def download_workspaces(self):
         reply =  requests.get(workspace.Workspace.api_url(),

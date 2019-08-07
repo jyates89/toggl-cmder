@@ -16,20 +16,19 @@ class UserDecoder(JSONDecoder):
                              **kwargs)
 
     def object_hook(self, obj):
-        # for some reason, the data passed in here isn't consistent
-        # so we need to check for the data attribute
-        print(obj)
-        if not obj.get('data', None):
-            return
+        if not 'data' in obj:
+            return obj
+
         return user.User(
-            full_name=obj['data']['fullname'],
-            id=obj['data']['id'],
-            tags=json.loads(obj['data']['tags'],
+            full_name=obj['data'].get('fullname'),
+            id=obj['data'].get('id'),
+            api_token=obj['data'].get('api_token'),
+            tags=json.loads(json.dumps(obj['data'].get('tags')),
                             cls=tag_decoder.TagDecoder),
-            workspaces=json.loads(obj['data']['workspace'],
+            workspaces=json.loads(json.dumps(obj['data'].get('workspaces')),
                                   cls=workspace_decoder.WorkspaceDecoder),
-            projects=json.loads(obj['data']['projects'],
+            projects=json.loads(json.dumps(obj['data'].get('projects')),
                                 cls=project_decoder.ProjectDecoder),
-            time_entries=json.loads(obj['data']['time_entries'],
+            time_entries=json.loads(json.dumps(obj['data'].get('time_entries')),
                                     cls=time_entry_decoder.TimeEntryDecoder)
         )
