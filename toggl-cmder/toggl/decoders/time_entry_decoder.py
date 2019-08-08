@@ -12,11 +12,12 @@ class TimeEntryDecoder(JSONDecoder):
     def object_hook(self, obj):
         if 'data' in obj:
             return obj['data']
+
         return time_entry.TimeEntry(
             id=obj.get('id'),
             wid=obj.get('wid'),
             pid=obj.get('pid'),
-            description=obj.get('description'),
+            description=obj.get('description', "None provided."),
             start=obj.get('start'),
             duration=obj.get('duration'),
             stop=obj.get('stop', None),

@@ -2,7 +2,7 @@
 from datetime import datetime,timezone
 
 from toggl import time_entry
-from toggl import tag_builder
+from toggl.builders import tag_builder
 
 class TimeEntryBuilder(object):
     @staticmethod

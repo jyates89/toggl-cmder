@@ -7,9 +7,9 @@ from tabulate import tabulate
 
 from toggl import interface
 
-from toggl import time_entry_builder
-from toggl import tag_builder
-from toggl import project_builder
+from toggl.builders import time_entry_builder
+from toggl.builders import tag_builder
+from toggl.builders import project_builder
 
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(
@@ -22,7 +22,7 @@ if __name__ == "__main__":
                             action='store_true',
                             help="Reset the API token used for toggl.")
     arg_parser.add_argument('--verbosity', '-v', action='count',
-                            help='Increase verbosity.', default=0)
+                            help='Increase verbosity.', default=3)
 
     arg_parser.add_argument('--list-projects',
                             action='store_true')
@@ -130,7 +130,7 @@ if __name__ == "__main__":
             token = token_file.read().rstrip()
             token_file.close()
         except FileNotFoundError:
-            logger.info("please create the token file '.api_token'")
+            logger.critical("please create the token file '.api_token'")
             exit(1)
 
     instance = interface.Interface(api_token=token,
@@ -145,7 +145,7 @@ if __name__ == "__main__":
         instance = interface.Interface(api_token=token,
                                        logger=logger)
 
-    if token == user_data.api_token:
+    if token == user_data.api_token and not args.token:
         logger.info("no token update needed")
     else:
         logger.info("updating token file")

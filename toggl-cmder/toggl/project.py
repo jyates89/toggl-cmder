@@ -1,4 +1,3 @@
-from tabulate import tabulate
 from datetime import datetime
 
 class Project(object):
