@@ -3,10 +3,10 @@ from json import JSONDecoder
 
 from toggl import user
 
-from toggl import tag_decoder
-from toggl import workspace_decoder
-from toggl import project_decoder
-from toggl import time_entry_decoder
+from toggl.decoders import tag_decoder
+from toggl.decoders import workspace_decoder
+from toggl.decoders import project_decoder
+from toggl.decoders import time_entry_decoder
 
 class UserDecoder(JSONDecoder):
     def __init__(self, *args, **kwargs):

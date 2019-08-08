@@ -7,9 +7,9 @@ from tabulate import tabulate
 
 from toggl import interface
 
-from toggl import time_entry_builder
-from toggl import tag_builder
-from toggl import project_builder
+from toggl.builders import time_entry_builder
+from toggl.builders import tag_builder
+from toggl.builders import project_builder
 
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(
