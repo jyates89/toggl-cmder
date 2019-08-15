@@ -1,104 +1,35 @@
-
 import argparse
+
 import logging
 import sys
 
 from tabulate import tabulate
 
-from toggl import interface
+from toggl.interface import Interface
+from toggl.arguments import Arguments
 
 from toggl.builders import time_entry_builder
 from toggl.builders import tag_builder
 from toggl.builders import project_builder
 
 if __name__ == "__main__":
-    arg_parser = argparse.ArgumentParser(
+    argument_parser = argparse.ArgumentParser(
         prog='python toggl-cmder',
         description='Control toggl via the REST API.')
+    Arguments.insert_main_arguments(argument_parser)
 
-    arg_parser.add_argument('--token', type=str,
-                            help='Specify the token string to use.')
-    arg_parser.add_argument('--token-reset',
-                            action='store_true',
-                            help="Reset the API token used for toggl.")
-    arg_parser.add_argument('--verbosity', '-v', action='count',
-                            help='Increase verbosity.', default=3)
+    # adding a nested parser for sub-arguments
+    sub_parser = argument_parser.add_subparsers(
+        dest='parser_name')
+    Arguments.insert_start_timer_arguments(sub_parser)
+    Arguments.insert_add_project_arguments(sub_parser)
+    Arguments.insert_add_timer_arguments(sub_parser)
+    Arguments.insert_add_tag_arguments(sub_parser)
 
-    arg_parser.add_argument('--list-projects',
-                            action='store_true')
-    arg_parser.add_argument('--list-tags',
-                            action='store_true')
-    arg_parser.add_argument('--list-time-entries',
-                            action='store_true')
-    arg_parser.add_argument('--list-workspaces',
-                            action='store_true')
+    args = argument_parser.parse_args()
 
-    sub_arg_parsers = arg_parser.add_subparsers(dest='parser_name')
-
-    start_timer_args = sub_arg_parsers.add_parser("start-timer",
-                                                  help="Start a new toggl timer.")
-    start_timer_args.add_argument('--description',
-                                  help="Description of the timer.",
-                                  required=True)
-    start_timer_args.add_argument('--project',
-                                  help='Project for this timer.')
-    start_timer_args.add_argument('--tags',
-                                  help='Tags for this timer.',
-                                  nargs='?',
-                                  default=[])
-    start_timer_args.add_argument('--workspace',
-                                  help='Workspace for this timer.')
-
-    arg_parser.add_argument('--stop-timer',
-                            action='store_true',
-                            help='Stop the current timer.')
-
-    add_timer_args = sub_arg_parsers.add_parser('add-timer',
-                                                help='Create a new timer.')
-    add_timer_args.add_argument('--description',
-                                help="Description of the timer.",
-                                required=True)
-    add_timer_args.add_argument('--project',
-                                help="Project for this timer.")
-    add_timer_args.add_argument('--workspace',
-                                help="Workspace for this timer.")
-    add_timer_args.add_argument('--tags',
-                                help="Tags for this timer.",
-                                nargs='?',
-                                default=[])
-    add_timer_args.add_argument('--start',
-                                help="Start time for this timer.",
-                                required=True)
-    add_timer_args.add_argument('--stop',
-                                help="Stop time for this timer.",
-                                required=True)
-
-
-    add_project_args = sub_arg_parsers.add_parser('add-project',
-                                                  help='Create a new project.')
-    add_project_args.add_argument('--name',
-                                  help='Name of the project to add.',
-                                  required=True)
-    add_project_args.add_argument('--workspace',
-                                  help='Workspace where this project belongs.',
-                                  required=True)
-
-    add_tag_args = sub_arg_parsers.add_parser('add-tag',
-                                              help='Add a new tag.')
-    add_tag_args.add_argument('--name',
-                              help='Name of the new tag.',
-                              required=True)
-    add_tag_args.add_argument('--workspace',
-                              help='Workspace where this tag belongs.',
-                              required=True)
-
-    arg_parser.add_argument('--current',
-                            help="Get current timer.",
-                            action='store_true')
-
-    args = arg_parser.parse_args()
     if len(sys.argv) == 1:
-        arg_parser.print_help()
+        argument_parser.print_help()
         exit(0)
 
     logger = logging.getLogger()
@@ -133,8 +64,8 @@ if __name__ == "__main__":
             logger.critical("please create the token file '.api_token'")
             exit(1)
 
-    instance = interface.Interface(api_token=token,
-                                   logger=logger)
+    instance = Interface(api_token=token,
+                         logger=logger)
     if not instance.test_connection():
         raise RuntimeError("authentication failure")
 
@@ -142,8 +73,8 @@ if __name__ == "__main__":
 
     if args.token_reset:
         token = instance.reset_user_token()
-        instance = interface.Interface(api_token=token,
-                                       logger=logger)
+        instance = Interface(api_token=token,
+                             logger=logger)
 
     if token == user_data.api_token and not args.token:
         logger.info("no token update needed")
