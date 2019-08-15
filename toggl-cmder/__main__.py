@@ -5,6 +5,8 @@ import sys
 
 from tabulate import tabulate
 
+from version import __version__
+
 from toggl.interface import Interface
 from toggl.arguments import Arguments
 
@@ -15,7 +17,8 @@ from toggl.builders import project_builder
 if __name__ == "__main__":
     argument_parser = argparse.ArgumentParser(
         prog='python toggl-cmder',
-        description='Control toggl via the REST API.')
+        description="Control toggl via the REST API. (v{})".format(
+            __version__))
     Arguments.insert_main_arguments(argument_parser)
 
     # adding a nested parser for sub-arguments
