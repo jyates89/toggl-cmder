@@ -5,8 +5,11 @@ This script allows a user to control Toggl via the REST API.
 ## Installation
 
 From the directory where you cloned this repository:
+
 `python3 -m venv $(pwd)/venv`
+
 `source $(pwd)/venv/bin/activate`
+
 `pip install -r requirements.txt`
 
 ## Usage Requirements
@@ -53,4 +56,6 @@ If there are any issues you have come across, please open a new issue or email m
 
 ## Limitations
 
-You cannot, at this time, use this script to delete items.
+* You cannot, at this time, use this script to delete items.
+* This does not support Toggl Pro.
+* You cannot, at this time, update or modify items that are already existing.
