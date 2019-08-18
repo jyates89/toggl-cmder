@@ -72,7 +72,11 @@ if __name__ == "__main__":
     if not instance.test_connection():
         raise RuntimeError("authentication failure")
 
-    user_data = instance.download_user_data()
+    if args.only_cached:
+        logger.info("opening user cache file")
+        user_data = instance.load_cached_user_data()
+    else:
+        user_data = instance.download_user_data()
 
     for tag in user_data.tags:
         tag.workspace = user_data.get_workspace_from_id(tag.workspace_id)
@@ -83,9 +87,9 @@ if __name__ == "__main__":
                              logger=logger)
 
     if token == user_data.api_token and not args.token:
-        logger.info("no token update needed")
+        logger.debug("no token update needed")
     else:
-        logger.info("updating token file")
+        logger.debug("updating token file")
         file = open('.api_token', 'w')
         file.write(token.replace('"', '').rstrip())
         file.close()

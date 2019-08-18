@@ -42,9 +42,15 @@ class Interface(object):
             user.User.api_user_url(),
             auth=self.__auth)
         reply.raise_for_status()
+        with open('cache.json', 'w') as cache:
+            cache.writelines(reply.text)
 
         return json.loads(reply.text,
                           cls=user_decoder.UserDecoder)
+
+    def load_cached_user_data(self):
+        with open('cache.json', 'r') as cache:
+            return json.load(cache, cls=user_decoder.UserDecoder)
 
     def download_workspaces(self):
         reply =  requests.get(workspace.Workspace.api_url(),
