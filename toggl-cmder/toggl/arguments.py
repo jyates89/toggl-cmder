@@ -22,6 +22,11 @@ class Arguments(object):
             default=3)
 
         argument_parser.add_argument(
+            '--only-cached',
+            action='store_true',
+            help="Only read from cached data.")
+
+        argument_parser.add_argument(
             '--list-projects',
             action='store_true')
 
