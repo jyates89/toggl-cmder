@@ -6,6 +6,8 @@ class Tag(object):
         self.__name = kwargs.get('name')
         self.__workspace_id = kwargs.get('workspace_id')
 
+        self.__workspace = None
+
     @property
     def name(self):
         return self.__name
@@ -17,6 +19,14 @@ class Tag(object):
     @property
     def workspace_id(self):
         return self.__workspace_id
+
+    @property
+    def workspace(self):
+        return self.__workspace
+
+    @workspace.setter
+    def workspace(self, workspace):
+        self.__workspace = workspace
 
     @staticmethod
     def api_url():
@@ -30,6 +40,6 @@ class Tag(object):
     def __str__(self):
         return "{},{},{}".format(
             self.__name,
-            self.__workspace_id,
+            self.__workspace.name,
             self.__id
         )
