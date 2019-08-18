@@ -74,6 +74,9 @@ if __name__ == "__main__":
 
     user_data = instance.download_user_data()
 
+    for tag in user_data.tags:
+        tag.workspace = user_data.get_workspace_from_id(tag.workspace_id)
+
     if args.token_reset:
         token = instance.reset_user_token()
         instance = Interface(api_token=token,
