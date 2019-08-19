@@ -34,7 +34,6 @@ class Workspace(object):
         )
 
     def __str__(self):
-        return "{},{}".format(
-            self.__name,
-            self.__id
+        return "{}".format(
+            self.__name
         )

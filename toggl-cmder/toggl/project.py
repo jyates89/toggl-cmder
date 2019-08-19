@@ -14,7 +14,7 @@ class Project(object):
                 kwargs.get('created'),
                 '%Y-%m-%dT%H:%M:%S%z'),
 
-        self.__workspace_ref = None # workspace.workspace
+        self.__workspace = None # workspace.workspace
 
     @property
     def name(self):
@@ -42,11 +42,11 @@ class Project(object):
 
     @property
     def workspace(self):
-        return self.__workspace_ref
+        return self.__workspace
 
     @workspace.setter
     def workspace(self, workspace):
-        self.__workspace_ref = workspace
+        self.__workspace = workspace
 
     @staticmethod
     def api_url():
@@ -68,10 +68,7 @@ class Project(object):
         )
 
     def __str__(self):
-        return "{},{},{},{},{}".format(
+        return "{},{}".format(
             self.__name,
-            self.__workspace_id,
-            self.__id,
-            self.__color,
-            self.__hex_color
+            self.__workspace.name
         )
