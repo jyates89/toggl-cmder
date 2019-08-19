@@ -30,7 +30,6 @@ if __name__ == "__main__":
     Arguments.insert_add_tag_arguments(sub_parser)
 
     args = argument_parser.parse_args()
-
     if len(sys.argv) == 1:
         argument_parser.print_help()
         exit(0)
@@ -78,8 +77,17 @@ if __name__ == "__main__":
     else:
         user_data = instance.download_user_data()
 
-    for tag in user_data.tags:
-        tag.workspace = user_data.get_workspace_from_id(tag.workspace_id)
+    # set workspace and project refs for each item so we can get actual names
+    if user_data.tags:
+        for tag in user_data.tags:
+            tag.workspace = user_data.get_workspace_from_id(tag.workspace_id)
+    if user_data.projects:
+        for project in user_data.projects:
+            project.workspace = user_data.get_workspace_from_id(project.workspace_id)
+    if user_data.time_entries:
+        for time_entry in user_data.time_entries:
+            time_entry.project = user_data.get_project_from_id(time_entry.project_id)
+            time_entry.workspace = user_data.get_workspace_from_id(time_entry.workspace_id)
 
     if args.token_reset:
         token = instance.reset_user_token()
@@ -150,27 +158,27 @@ if __name__ == "__main__":
     if args.list_workspaces:
         logger.info("\n{}".format(tabulate(
             [s.__str__().split(',') for s in user_data.workspaces],
-            headers=["name", "id"],
+            headers=["name"],
             tablefmt="grid"
         )))
 
     if args.list_projects:
         logger.info("\n{}".format(tabulate(
             [s.__str__().split(',') for s in user_data.projects],
-            headers=["name","workspace","id","color","hex"],
+            headers=["name","workspace"],
             tablefmt="grid"
         )))
 
     if args.list_tags:
         logger.info("\n{}".format(tabulate(
             [s.__str__().split(',') for s in user_data.tags],
-            headers=["name", "workspace", "id"],
+            headers=["name", "workspace"],
             tablefmt="grid"
         )))
 
     if args.list_time_entries:
         logger.info("\n{}".format(tabulate(
             [s.__str__().split(',') for s in user_data.time_entries],
-            headers=["description", "id", "project", "workspace", "duration"],
+            headers=["description", "project", "workspace", "duration", "tags"],
             tablefmt="grid"
         )))

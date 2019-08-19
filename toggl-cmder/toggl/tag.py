@@ -38,8 +38,7 @@ class Tag(object):
         )
 
     def __str__(self):
-        return "{},{},{}".format(
+        return "{},{}".format(
             self.__name,
-            self.__workspace.name,
-            self.__id
+            self.__workspace.name
         )
