@@ -27,6 +27,7 @@ class TimeEntry(object):
         except TypeError:
             self.__stop_time = None
 
+        self.__tag_refs = []
         self.__tags = kwargs.get('tags', [])
 
     @staticmethod
@@ -103,6 +104,13 @@ class TimeEntry(object):
     @property
     def tags(self):
         return self.__tags
+
+    @property
+    def tag_refs(self):
+        return self.__tag_refs
+
+    def add_tag_ref(self, ref):
+        self.__tag_refs.append(ref)
 
     def __str__(self):
         return "{},{},{},{},{}".format(
