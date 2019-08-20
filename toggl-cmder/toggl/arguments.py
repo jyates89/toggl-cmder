@@ -22,6 +22,11 @@ class Arguments(object):
             default=3)
 
         argument_parser.add_argument(
+            '--only-cached',
+            action='store_true',
+            help="Only read from cached data.")
+
+        argument_parser.add_argument(
             '--list-projects',
             action='store_true')
 
@@ -41,6 +46,11 @@ class Arguments(object):
             '--stop-timer',
             action='store_true',
             help='Stop the current timer.')
+
+        argument_parser.add_argument(
+            '--resume-latest-timer',
+            action='store_true',
+            help='Resume the latest timer.')
 
         argument_parser.add_argument(
             '--current',

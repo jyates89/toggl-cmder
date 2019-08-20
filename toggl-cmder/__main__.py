@@ -30,7 +30,6 @@ if __name__ == "__main__":
     Arguments.insert_add_tag_arguments(sub_parser)
 
     args = argument_parser.parse_args()
-
     if len(sys.argv) == 1:
         argument_parser.print_help()
         exit(0)
@@ -72,7 +71,25 @@ if __name__ == "__main__":
     if not instance.test_connection():
         raise RuntimeError("authentication failure")
 
-    user_data = instance.download_user_data()
+    if args.only_cached:
+        logger.info("opening user cache file")
+        user_data = instance.load_cached_user_data()
+    else:
+        user_data = instance.download_user_data()
+
+    # set workspace and project refs for each item so we can get actual names
+    if user_data.tags:
+        for tag in user_data.tags:
+            tag.workspace = user_data.get_workspace_from_id(tag.workspace_id)
+    if user_data.projects:
+        for project in user_data.projects:
+            project.workspace = user_data.get_workspace_from_id(project.workspace_id)
+    if user_data.time_entries:
+        for time_entry in user_data.time_entries:
+            time_entry.project = user_data.get_project_from_id(time_entry.project_id)
+            time_entry.workspace = user_data.get_workspace_from_id(time_entry.workspace_id)
+            for tag in time_entry.tags:
+                time_entry.add_tag_ref(user_data.find_user_tag(tag))
 
     if args.token_reset:
         token = instance.reset_user_token()
@@ -80,16 +97,32 @@ if __name__ == "__main__":
                              logger=logger)
 
     if token == user_data.api_token and not args.token:
-        logger.info("no token update needed")
+        logger.debug("no token update needed")
     else:
-        logger.info("updating token file")
+        logger.debug("updating token file")
         file = open('.api_token', 'w')
         file.write(token.replace('"', '').rstrip())
         file.close()
 
+    ## Listing the current running time entry: query API and then update the project/workspace
+    ## references. TODO: can be extracted?
     if args.current:
         time_entry = instance.get_current_entry()
-        logger.info(time_entry)
+        if time_entry is None:
+            logger.info("no current time entry")
+        else:
+            time_entry.project = user_data.get_project_from_id(time_entry.project_id)
+            time_entry.workspace = user_data.get_workspace_from_id(time_entry.workspace_id)
+            logger.info("\n{}".format(tabulate(
+                [time_entry.__str__().split(',')],
+                headers=["description", "project", "workspace", "duration", "tags"],
+                tablefmt="grid"
+            )))
+
+    if args.resume_latest_timer:
+        time_entry = user_data.time_entries[-1]
+        if time_entry is not None:
+            instance.start_time_entry(time_entry)
 
     if args.stop_timer:
         logger.info("searching for current timer")
@@ -140,30 +173,44 @@ if __name__ == "__main__":
                 args.name, workspace)
             instance.create_project(project)
 
+    ## The following code covers listing items.
+    ## TODO: can be extracted?
     if args.list_workspaces:
-        logger.info("\n{}".format(tabulate(
-            [s.__str__().split(',') for s in user_data.workspaces],
-            headers=["name", "id"],
-            tablefmt="grid"
-        )))
+        if user_data.workspaces:
+            logger.info("\n{}".format(tabulate(
+                [s.__str__().split(',') for s in user_data.workspaces],
+                headers=["name"],
+                tablefmt="grid"
+            )))
+        else:
+            logger.info("no workspaces found")
 
     if args.list_projects:
-        logger.info("\n{}".format(tabulate(
-            [s.__str__().split(',') for s in user_data.projects],
-            headers=["name","workspace","id","color","hex"],
-            tablefmt="grid"
-        )))
+        if user_data.projects:
+            logger.info("\n{}".format(tabulate(
+                [s.__str__().split(',') for s in user_data.projects],
+                headers=["name","workspace"],
+                tablefmt="grid"
+            )))
+        else:
+            logger.info("no projects found")
 
     if args.list_tags:
-        logger.info("\n{}".format(tabulate(
-            [s.__str__().split(',') for s in user_data.tags],
-            headers=["name", "workspace", "id"],
-            tablefmt="grid"
-        )))
+        if user_data.tags:
+            logger.info("\n{}".format(tabulate(
+                [s.__str__().split(',') for s in user_data.tags],
+                headers=["name", "workspace"],
+                tablefmt="grid"
+            )))
+        else:
+            logger.info("no tags found")
 
     if args.list_time_entries:
-        logger.info("\n{}".format(tabulate(
-            [s.__str__().split(',') for s in user_data.time_entries],
-            headers=["description", "id", "project", "workspace", "duration"],
-            tablefmt="grid"
-        )))
+        if user_data.time_entries:
+            logger.info("\n{}".format(tabulate(
+                [s.__str__().split(',') for s in user_data.time_entries],
+                headers=["description", "project", "workspace", "duration", "tags"],
+                tablefmt="grid"
+            )))
+        else:
+            logger.info("no time entries found")

@@ -23,6 +23,7 @@ class UserDecoder(JSONDecoder):
             full_name=obj['data'].get('fullname'),
             id=obj['data'].get('id'),
             api_token=obj['data'].get('api_token'),
+            timestamp=obj['data'].get('at'),
             tags=json.loads(json.dumps(obj['data'].get('tags')),
                             cls=tag_decoder.TagDecoder),
             workspaces=json.loads(json.dumps(obj['data'].get('workspaces')),

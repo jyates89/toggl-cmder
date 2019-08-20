@@ -5,6 +5,7 @@ class User(object):
         self.__name = kwargs.get('full_name')
         self.__id = kwargs.get('id')
         self.__api_token = kwargs.get('api_token', None)
+        self.__timestamp = kwargs.get('timestamp')
 
         self.__tags = kwargs.get('tags', []) # tag.Tag
         self.__projects = kwargs.get('projects', []) # project.Project
@@ -22,6 +23,10 @@ class User(object):
     @property
     def api_token(self):
         return self.__api_token
+
+    @property
+    def timestamp(self):
+        return self.__timestamp
 
     @property
     def tags(self):
@@ -85,6 +90,8 @@ class User(object):
         return self.__time_entries
 
     def find_time_entry(self, time_entry_description, workspace_name, project_name):
+        if self.__time_entries is None:
+            raise ValueError("no time entries exist in user data")
         project = self.find_project(project_name, workspace_name)
         time_entry = next(filter(
             lambda entry: re.search(time_entry_description,

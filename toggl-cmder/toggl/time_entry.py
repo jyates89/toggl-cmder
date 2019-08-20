@@ -5,7 +5,12 @@ class TimeEntry(object):
         self.__id = kwargs.get('id')
         self.__workspace_id = kwargs.get('wid')
 
+        self.__workspace = None
+
         self.__project_id = kwargs.get('pid')
+
+        self.__project = None
+
         self.__description = kwargs.get('description')
 
         self.__start_time, = datetime.fromisoformat(kwargs.get('start')),
@@ -22,6 +27,7 @@ class TimeEntry(object):
         except TypeError:
             self.__stop_time = None
 
+        self.__tag_refs = []
         self.__tags = kwargs.get('tags', [])
 
     @staticmethod
@@ -56,8 +62,24 @@ class TimeEntry(object):
         return self.__workspace_id
 
     @property
+    def workspace(self):
+        return self.__workspace
+
+    @workspace.setter
+    def workspace(self, workspace):
+        self.__workspace = workspace
+
+    @property
     def project_id(self):
         return self.__project_id
+
+    @property
+    def project(self):
+        return self.__project
+
+    @project.setter
+    def project(self, project):
+        self.__project = project
 
     @property
     def description(self):
@@ -83,12 +105,18 @@ class TimeEntry(object):
     def tags(self):
         return self.__tags
 
+    @property
+    def tag_refs(self):
+        return self.__tag_refs
+
+    def add_tag_ref(self, ref):
+        self.__tag_refs.append(ref)
+
     def __str__(self):
-        return "{},{},{},{},{},{}".format(
+        return "{},{},{},{},{}".format(
             self.__description,
-            self.__id,
-            self.__project_id,
-            self.__workspace_id,
+            self.__project.name,
+            self.__workspace.name,
             self.__duration,
-            [tag for tag in self.__tags]
+            ";".join(self.__tags)
         )
