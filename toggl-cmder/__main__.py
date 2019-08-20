@@ -102,9 +102,20 @@ if __name__ == "__main__":
         file.write(token.replace('"', '').rstrip())
         file.close()
 
+    ## Listing the current running time entry: query API and then update the project/workspace
+    ## references.
     if args.current:
         time_entry = instance.get_current_entry()
-        logger.info(time_entry)
+        if time_entry is None:
+            logger.info("no current time entry")
+        else:
+            time_entry.project = user_data.get_project_from_id(time_entry.project_id)
+            time_entry.workspace = user_data.get_workspace_from_id(time_entry.workspace_id)
+            logger.info("\n{}".format(tabulate(
+                [time_entry.__str__().split(',')],
+                headers=["description", "project", "workspace", "duration", "tags"],
+                tablefmt="grid"
+            )))
 
     if args.stop_timer:
         logger.info("searching for current timer")
