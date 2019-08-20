@@ -104,7 +104,14 @@ if __name__ == "__main__":
 
     if args.current:
         time_entry = instance.get_current_entry()
-        logger.info(time_entry)
+        if time_entry is None:
+            logger.info("no current time entry")
+        else:
+            logger.info("\n{}".format(tabulate(
+                time_entry.__str__().split(','),
+                headers=["description", "project", "workspace", "duration", "tags"],
+                tablefmt="grid"
+            )))
 
     if args.stop_timer:
         logger.info("searching for current timer")
