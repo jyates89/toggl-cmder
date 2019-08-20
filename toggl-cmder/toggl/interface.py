@@ -106,9 +106,11 @@ class Interface(object):
 
     def start_time_entry(self, time_entry):
         data = json.dumps(time_entry, cls=time_entry_encoder.TimeEntryEncoder)
+        self.__logger.debug("request.json: {}".format(data))
         result = requests.post(time_entry.api_start_entry_url(),
                                data=data,
                                auth=self.__auth)
+        self.__logger.debug("reply.text: {}".format(result.text))
         result.raise_for_status()
 
     def stop_time_entry(self, time_entry):

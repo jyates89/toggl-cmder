@@ -48,6 +48,11 @@ class Arguments(object):
             help='Stop the current timer.')
 
         argument_parser.add_argument(
+            '--resume-latest-timer',
+            action='store_true',
+            help='Resume the latest timer.')
+
+        argument_parser.add_argument(
             '--current',
             help="Get current timer.",
             action='store_true')

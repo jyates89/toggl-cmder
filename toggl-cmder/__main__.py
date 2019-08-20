@@ -88,6 +88,8 @@ if __name__ == "__main__":
         for time_entry in user_data.time_entries:
             time_entry.project = user_data.get_project_from_id(time_entry.project_id)
             time_entry.workspace = user_data.get_workspace_from_id(time_entry.workspace_id)
+            for tag in time_entry.tags:
+                time_entry.add_tag_ref(user_data.find_user_tag(tag))
 
     if args.token_reset:
         token = instance.reset_user_token()
@@ -116,6 +118,11 @@ if __name__ == "__main__":
                 headers=["description", "project", "workspace", "duration", "tags"],
                 tablefmt="grid"
             )))
+
+    if args.resume_latest_timer:
+        time_entry = user_data.time_entries[-1]
+        if time_entry is not None:
+            instance.start_time_entry(time_entry)
 
     if args.stop_timer:
         logger.info("searching for current timer")
