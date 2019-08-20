@@ -103,7 +103,7 @@ if __name__ == "__main__":
         file.close()
 
     ## Listing the current running time entry: query API and then update the project/workspace
-    ## references.
+    ## references. TODO: can be extracted?
     if args.current:
         time_entry = instance.get_current_entry()
         if time_entry is None:
@@ -166,30 +166,44 @@ if __name__ == "__main__":
                 args.name, workspace)
             instance.create_project(project)
 
+    ## The following code covers listing items.
+    ## TODO: can be extracted?
     if args.list_workspaces:
-        logger.info("\n{}".format(tabulate(
-            [s.__str__().split(',') for s in user_data.workspaces],
-            headers=["name"],
-            tablefmt="grid"
-        )))
+        if user_data.workspaces:
+            logger.info("\n{}".format(tabulate(
+                [s.__str__().split(',') for s in user_data.workspaces],
+                headers=["name"],
+                tablefmt="grid"
+            )))
+        else:
+            logger.info("no workspaces found")
 
     if args.list_projects:
-        logger.info("\n{}".format(tabulate(
-            [s.__str__().split(',') for s in user_data.projects],
-            headers=["name","workspace"],
-            tablefmt="grid"
-        )))
+        if user_data.projects:
+            logger.info("\n{}".format(tabulate(
+                [s.__str__().split(',') for s in user_data.projects],
+                headers=["name","workspace"],
+                tablefmt="grid"
+            )))
+        else:
+            logger.info("no projects found")
 
     if args.list_tags:
-        logger.info("\n{}".format(tabulate(
-            [s.__str__().split(',') for s in user_data.tags],
-            headers=["name", "workspace"],
-            tablefmt="grid"
-        )))
+        if user_data.tags:
+            logger.info("\n{}".format(tabulate(
+                [s.__str__().split(',') for s in user_data.tags],
+                headers=["name", "workspace"],
+                tablefmt="grid"
+            )))
+        else:
+            logger.info("no tags found")
 
     if args.list_time_entries:
-        logger.info("\n{}".format(tabulate(
-            [s.__str__().split(',') for s in user_data.time_entries],
-            headers=["description", "project", "workspace", "duration", "tags"],
-            tablefmt="grid"
-        )))
+        if user_data.time_entries:
+            logger.info("\n{}".format(tabulate(
+                [s.__str__().split(',') for s in user_data.time_entries],
+                headers=["description", "project", "workspace", "duration", "tags"],
+                tablefmt="grid"
+            )))
+        else:
+            logger.info("no time entries found")
