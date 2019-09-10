@@ -144,10 +144,20 @@ if __name__ == "__main__":
             logger.warning('time entry already exists')
             instance.start_time_entry(time_entry)
         except ValueError:
-            workspace = user_data.find_workspace(args.workspace)
-            project = user_data.find_user_project(args.project)
+            if args.workspace:
+                workspace = user_data.find_workspace(args.workspace)
+            else:
+                workspace = None
+            if args.project:
+                project = user_data.find_user_project(args.project)
+            else:
+                project = None
+            if args.tags:
+                tags = args.tags.split(',')
+            else:
+                tags = None
             time_entry = time_entry_builder.TimeEntryBuilder.from_now(
-                workspace, project, args.description, args.tags.split(','))
+                workspace, project, args.description, tags)
             instance.start_time_entry(time_entry)
 
     elif args.parser_name == 'add-tag':
@@ -165,7 +175,7 @@ if __name__ == "__main__":
     elif args.parser_name == 'add-project':
         try:
             user_data.find_project(
-                args.project,
+                args.name,
                 args.workspace)
         except ValueError:
             workspace = user_data.find_workspace(args.workspace)
