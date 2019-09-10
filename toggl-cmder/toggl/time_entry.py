@@ -27,7 +27,7 @@ class TimeEntry(object):
         except TypeError:
             self.__stop_time = None
 
-        self.__tag_refs = []
+        self.__tag_refs = kwargs.get('tag_refs', [])
         self.__tags = kwargs.get('tags', [])
 
     @staticmethod

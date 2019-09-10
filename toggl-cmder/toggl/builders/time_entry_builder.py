@@ -14,7 +14,7 @@ class TimeEntryBuilder(object):
             pid=project.id,
             description=description,
             start=datetime.now(timezone.utc).isoformat(),
-            tags=built_tags)
+            tag_refs=built_tags)
 
     @staticmethod
     def from_start(start, workspace_id, project_id):
