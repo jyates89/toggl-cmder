@@ -165,7 +165,7 @@ if __name__ == "__main__":
     elif args.parser_name == 'add-project':
         try:
             user_data.find_project(
-                args.project,
+                args.name,
                 args.workspace)
         except ValueError:
             workspace = user_data.find_workspace(args.workspace)
