@@ -90,6 +90,14 @@ class Interface(object):
         return json.loads(reply.text,
                           cls=time_entry_decoder.TimeEntryDecoder)
 
+    def download_time_entries(self, start, end):
+        request_string = time_entry.TimeEntry.api_url() +\
+            "?start_date={}&".format(start) +\
+            "end_date={}".format(end)
+        reply = requests.get(request_string)
+        return json.loads(reply.text,
+                          cls=time_entry_decoder.TimeEntryDecoder)
+
     def create_project(self, project):
         data = json.dumps(project, cls=project_encoder.ProjectEncoder)
         result = requests.post(project.api_url(),
