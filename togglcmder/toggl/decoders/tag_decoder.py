@@ -1,6 +1,6 @@
 from json import JSONDecoder
 
-from toggl.builders.tag_builder import TagBuilder
+from togglcmder.toggl.builders.tag_builder import TagBuilder
 
 
 class TagDecoder(JSONDecoder):

@@ -1,6 +1,6 @@
 from json import JSONDecoder
 
-from toggl.builders.time_entry_builder import TimeEntryBuilder
+from togglcmder.toggl.builders.time_entry_builder import TimeEntryBuilder
 
 
 class TimeEntryDecoder(JSONDecoder):
@@ -21,11 +21,11 @@ class TimeEntryDecoder(JSONDecoder):
                 .description(obj.get('description', None))\
                 .workspace_identifier(obj['wid'])\
                 .project_identifier(obj.get('pid', None))\
-                .start_time(obj['start'])\
+                .start_time(start_time=obj['start'])\
                 .duration(obj.get('duration', None))\
-                .stop_time(obj.get('stop', None))\
+                .stop_time(stop_time=obj.get('stop', None))\
                 .tags(obj.get('tags', None))\
-                .last_updated(obj.get('at', None))\
+                .last_updated(last_update=obj.get('at', None))\
                 .build()
 
         return obj

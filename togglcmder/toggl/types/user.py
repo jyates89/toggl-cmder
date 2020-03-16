@@ -1,7 +1,9 @@
 from typing import Optional
 from datetime import datetime
+from functools import total_ordering
 
 
+@total_ordering
 class User(object):
     def __init__(self, *, name: str, api_token: str,
                  identifier: Optional[int] = None,
@@ -20,18 +22,18 @@ class User(object):
             and self.__identifier == other.identifier \
             and self.__last_updated == other.last_updated
 
+    def __lt__(self, other):
+        if not isinstance(other, User):
+            return NotImplemented
+        return self.__name.lower() < other.__name.lower()
+
     def __str__(self):
-        return """
-            name = {},
-            identifier = {},
-            api_token = {},
-            last_updated = {}
-        """.format(
+        return "{},{},{},{}".format(
             self.name,
             self.identifier,
             self.api_token,
-            self.last_updated.isoformat()
-        )
+            self.last_updated.isoformat())
+
     @property
     def name(self) -> str:
         return self.__name

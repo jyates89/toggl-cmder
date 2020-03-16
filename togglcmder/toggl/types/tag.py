@@ -1,6 +1,8 @@
 from typing import Optional
+from functools import total_ordering
 
 
+@total_ordering
 class Tag(object):
     def __init__(self, *, name: str, workspace_identifier: int,
                  identifier: Optional[int] = None):
@@ -16,16 +18,17 @@ class Tag(object):
             and self.__workspace_identifier == other.workspace_identifier \
             and self.__identifier == other.identifier
 
+    def __lt__(self, other):
+        if not isinstance(other, Tag):
+            raise NotImplemented
+        return self.__name.lower() < other.__name.lower()
+
     def __str__(self):
-        return """
-            tag name = {},
-            tag identifier = {},
-            tag workspace identifier = {}
-        """.format(
+        return "{},{},{}".format(
             self.name,
             self.identifier,
-            self.workspace_identifier
-        )
+            self.workspace_identifier)
+
     @property
     def name(self) -> str:
         return self.__name

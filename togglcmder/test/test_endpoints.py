@@ -4,7 +4,7 @@ import urllib.parse
 from datetime import datetime
 from pytz import timezone
 
-from toggl.endpoints.api import API
+from togglcmder.toggl.endpoints.api import API
 
 
 class TestEndpoints(unittest.TestCase):

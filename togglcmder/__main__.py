@@ -1,226 +1,253 @@
 #!/usr/bin/env python
 
-import argparse
-
+import os
+import click
+import json
 import logging
+import logging.handlers
 import sys
 
-from tabulate import tabulate
+from typing import Optional, List
 
-from version import __version__
+from togglcmder.version import __version__
 
-from toggl.interface import Interface
-from arguments import Arguments
+from togglcmder.toggl.cli.workspaces import workspaces as workspace_cli
+from togglcmder.toggl.cli.projects import projects as project_cli
+from togglcmder.toggl.cli.tags import tags as tag_cli
+from togglcmder.toggl.cli.time_entries import timers as timer_cli
 
-from toggl.builders import time_entry_builder
-from toggl.builders import tag_builder
-from toggl.builders import project_builder
+from togglcmder.toggl.caching import Caching
+from togglcmder.toggl.downloader import Downloader
+from togglcmder.toggl.commands import Commands
 
-from toggl.downloader import Downloader
-from toggl.caching import Caching
 
-if __name__ == "__main__":
-    argument_parser = argparse.ArgumentParser(
-        prog='python togglcmder',
-        description="Control toggl via the REST API. (v{})".format(
-            __version__))
-    Arguments.insert_main_arguments(argument_parser)
+@click.group(invoke_without_command=True)
+@click.option(
+    '--api-key',
+    help='Your API key for the Toggl API',
+    type=str,
+    show_envvar=True,
+    allow_from_autoenv=True
+)
+@click.option(
+    '--reset-api-key',
+    help='Resets the Toggl API key and downloads it to the local device.',
+    is_flag=True,
+    flag_value=True,
+    callback=lambda c, x, v: click.confirm('Are you sure you want to reset the API key?') if v else False
+)
+@click.option(
+    '--default-workspace',
+    help='Specify a default workspace to use when otherwise not specified.',
+    show_envvar=True,
+    allow_from_autoenv=True
+)
+@click.option(
+    '--default-project',
+    help='Specify a default project to use when otherwise not specified.',
+    show_envvar=True,
+    allow_from_autoenv=True
+)
+@click.option(
+    '--default-tags',
+    help='Specify some default tags to always include for timers started on this machine.',
+    show_envvar=True,
+    allow_from_autoenv=True
+)
+@click.option(
+    '--default-time-entry-start-days',
+    help='Specify some default start time to refresh time entries.',
+    type=int
+    # help='This is the number of days before now we should start looking for time '
+    #     'entries when doing a refresh. The default of "30" means look for '
+    #     'time entries starting from 30 days ago.'
+)
+@click.option(
+    '--default-time-entry-stop-days',
+    help='Specify some default stop time to refresh time entries.',
+    type=int
+    # help='This is the number of days before now that we should stop looking '
+    #     'for time entries when doing a refresh. The default of "0" means'
+    #     'make the stop time now.'
+)
+@click.option(
+    '--verbosity', '-v',
+    default=0,
+    count=True
+)
+@click.option(
+    '--version',
+    is_flag=True,
+    callback=lambda c, t, v: click.echo(f"Version {__version__}") & c.exit() if v else False,
+    expose_value=False,
+    is_eager=True
+)
+@click.option(
+    '--sync',
+    help='Download from remote Toggl servers before attempting item lookups.',
+    is_flag=True,
+    default=False,
+    show_default=True
+)
+@click.option(
+    '--show-config',
+    help='Simply prints the current configuration.',
+    is_flag=True,
+    default=False
+)
+@click.pass_context
+def main(context: click.Context,
+         api_key: str,
+         reset_api_key: bool,
+         default_workspace: str,
+         default_project: str,
+         default_tags: str,
+         default_time_entry_start_days: int,
+         default_time_entry_stop_days: int,
+         verbosity: int,
+         sync: bool,
+         show_config: bool):
 
-    # adding a nested parser for sub-arguments
-    sub_parser = argument_parser.add_subparsers(
-        dest='parser_name')
-    Arguments.insert_start_timer_arguments(sub_parser)
-    Arguments.insert_add_project_arguments(sub_parser)
-    Arguments.insert_add_timer_arguments(sub_parser)
-    Arguments.insert_add_tag_arguments(sub_parser)
+    # This object (context object provided by Click for sharing data between the
+    # various command chains) contains configuration, defaults, and the objects we
+    # create in the entry point to establish a connection to the database and start
+    # logging to the file. The data key contains the current relevant objects, such
+    # as workspaces, projects, tags, or time entries.
+    context.obj = {
+        'config': {
+            'api_key': Optional[str],
+            'default_workspace': Optional[str],
+            'default_project': Optional[str],
+            'default_tags': Optional[List[str]],
+            'default_time_entry_window_start_days': 5,
+            'default_time_entry_window_stop_days': 0
+        },
+        'cache': Optional[Caching],
+        'downloader': Optional[Downloader],
+        'commands': Optional[Commands],
+        'sync': sync,
+        'data': {
+            'workspaces': [],
+            'workspace': None,
+            'projects': [],
+            'project': None,
+            'tags': [],
+            'time_entries': []
+        }
+    }
+    # Set up the paths paths that we need.
+    app_dir = click.get_app_dir('togglcmder')
 
-    args = argument_parser.parse_args()
-    if len(sys.argv) == 1:
-        argument_parser.print_help()
-        exit(0)
+    cache = Caching(cache_name=os.path.join(app_dir, 'cache.db'))
+    context.obj['cache'] = cache
 
     logger = logging.getLogger()
-    log_file_handle = logging.FileHandler('togglcmder.log')
-    log_stream_handle = logging.StreamHandler(sys.stdout)
+
+    # Logs to the app directory instead of where the script is run from.
+    log_path = os.path.join(app_dir, 'toggl.log')
+    log_file_handle = logging.handlers.RotatingFileHandler(log_path)
+
+    # TODO: is this formatted string sufficient for logging? Too much?
     formatter = logging.Formatter(
-        "%(asctime)s: %(levelname)s: %(module)s: %(lineno)d: %(message)s",
+        "%(asctime)s: %(levelname)s: %(name)s: %(lineno)d: %(message)s",
         "%Y-%m-%dT%H:%M:%S")
+
     log_file_handle.setFormatter(formatter)
-    log_stream_handle.setFormatter(formatter)
+
     logger.addHandler(log_file_handle)
-    logger.addHandler(log_stream_handle)
 
-    # formula to convert 0-5 to actual inverted logging levels:
-    # User enters 0 -> CRITICAL: 50
-    # User enters 1 -> ERROR: 40
-    # User enters 2 -> WARN: 30
-    # User enters 3 -> INFO: 20
-    # User enters 4 -> DEBUG: 10
-    logger.setLevel((args.verbosity * -10) + 50)
+    # The way logger handles the debug levels is a bit odd, so we need to do
+    # this to allow the the user to change the levels as expected. e.g. -vvv
+    # allows more verbosity than just -v.
+    logger.setLevel(60 - ((3 + verbosity) * 10))
 
-    token = ""
-
-    if args.token:
-        token = args.token
+    # Configuration file is automatically created and stored in the application
+    # directory for the user. If it exists, it's simply loaded.
+    config = os.path.join(app_dir, 'toggl.json')
+    if not os.path.isdir(app_dir):
+        os.mkdir(app_dir)
+        with open(config, 'w') as handle:
+            json.dump(context.obj['config'], handle, sort_keys=True, indent=4)
     else:
+        with open(config, 'r') as handle:
+            # Merge the defaults in with the actual configuration.
+            context.obj['config'] = {**context.obj['config'], **json.load(handle)}
+
+    # If the user provides the API key, we overwrite the key from the configuration
+    # file and use that for all future requests.
+    if api_key:
+        context.obj['config']['api_key'] = api_key
+
+    # We obviously cannot do anything without an API key.
+    if not context.obj['config']['api_key']:
+        click.echo(click.style("ERROR", fg="red") +
+                   ": there is no API key defined. Check the README or Wiki for "
+                   "more information.")
+        return
+
+    # The API key can be reset and is automatically updated in both the file and
+    # the running instance of the script.
+    if reset_api_key:
         try:
-            token_file = open('.api_token', 'r')
-            token = token_file.read().rstrip()
-            token_file.close()
-        except FileNotFoundError:
-            logger.critical("please create the token file '.api_token'")
-            exit(1)
+            context.obj['config']['api_key'] = Commands(
+                context.obj['config']['api_key']).reset_api_token().strip('"')
+            click.echo(click.style("SUCCESS", fg="green") +
+                       "API key successfully reset!")
+        except Exception as e:
+            click.echo(click.style("ERROR", fg="red") +
+                       "Failed to reset API key. Check logs for more information.")
+            logger.error(e)
 
-    caching = Caching()
-    downloader = Downloader(token)
-
-    user_data = downloader.download_user_data()
-    caching.update_user_cache(user_data)
-
-    workspace_data = downloader.download_workspaces()
-    caching.update_workspace_cache(workspace_data)
-
-    for workspace in workspace_data:
-        tag_data = downloader.download_tags(workspace)
-        caching.update_tag_cache(tag_data)
-
-        project_data = downloader.download_projects(workspace)
-        caching.update_project_cache(project_data)
-
-    exit(1)
-
-    if args.token_reset:
-        token = instance.reset_user_token()
-        instance = Interface(api_token=token,
-                             logger=logger)
-
-    if token == user_data.api_token and not args.token:
-        logger.debug("no token update needed")
-    else:
-        logger.debug("updating token file")
-        file = open('.api_token', 'w')
-        file.write(token.replace('"', '').rstrip())
-        file.close()
-
-    ## Listing the current running time entry: query API and then update the project/workspace
-    ## references. TODO: can be extracted?
-    if args.current:
-        time_entry = instance.get_current_entry()
-        if time_entry is None:
-            logger.info("no current time entry")
+    # These defaults can allow users to start timers without needing to specify
+    # a workspace and project every single time. If the specific options for a
+    # given command are not provided then these are used.
+    if default_workspace:
+        if default_workspace == 'None':
+            context.obj['config']['default_workspace'] = None
         else:
-            time_entry.project = user_data.get_project_from_id(time_entry.project_id)
-            time_entry.workspace = user_data.get_workspace_from_id(time_entry.workspace_id)
-            logger.info("\n{}".format(tabulate(
-                [time_entry.__str__().split(',')],
-                headers=["description", "project", "workspace", "duration", "tags"],
-                tablefmt="grid"
-            )))
+            context.obj['config']['default_workspace'] = default_workspace
 
-    if args.resume_latest_timer:
-        time_entry = user_data.time_entries[-1]
-        if time_entry is not None:
-            instance.start_time_entry(time_entry)
-
-    if args.stop_timer:
-        logger.info("searching for current timer")
-        time_entry = instance.get_current_entry()
-        if time_entry:
-            logger.info("stopping entry: description = '{}'".format(
-                time_entry.description
-            ))
-            instance.stop_time_entry(time_entry)
+    if default_project:
+        if default_project == 'None':
+            context.obj['config']['default_project'] = None
         else:
-            logging.info("no running entry")
+            context.obj['config']['default_project'] = default_project
 
-    if args.parser_name == 'start-timer':
-        try:
-            time_entry = user_data.find_time_entry(
-                args.description,
-                args.workspace,
-                args.project)
-            logger.warning('time entry already exists')
-            instance.start_time_entry(time_entry)
-        except ValueError:
-            if args.workspace:
-                workspace = user_data.find_workspace(args.workspace)
-            else:
-                workspace = None
-            if args.project:
-                project = user_data.find_user_project(args.project)
-            else:
-                project = None
-            if args.tags:
-                tags = args.tags.split(',')
-            else:
-                tags = None
-            time_entry = time_entry_builder.TimeEntryBuilder.from_now(
-                workspace, project, args.description, tags)
-            instance.start_time_entry(time_entry)
-
-    elif args.parser_name == 'add-tag':
-        try:
-            user_data.find_tag(
-                args.name,
-                args.workspace)
-        except ValueError:
-            workspace = user_data.find_workspace(args.workspace)
-            tag = tag_builder.TagBuilder.from_name_and_workspace(
-                args.name,
-                workspace)
-            instance.create_tag(tag)
-
-    elif args.parser_name == 'add-project':
-        try:
-            user_data.find_project(
-                args.name,
-                args.workspace)
-        except ValueError:
-            workspace = user_data.find_workspace(args.workspace)
-            project = project_builder.ProjectBuilder.from_name_and_workspace(
-                args.name, workspace)
-            instance.create_project(project)
-
-    ## The following code covers listing items.
-    ## TODO: can be extracted?
-    if args.list_workspaces:
-        workspaces = instance.download_workspaces()
-        if workspaces:
-            logger.info("\n{}".format(tabulate(
-                [s.__str__().split(',') for s in workspaces],
-                headers=["name"],
-                tablefmt="grid"
-            )))
+    if default_tags:
+        if default_tags == 'None':
+            context.obj['config']['default_tags'] = None
         else:
-            logger.info("no workspaces found")
+            context.obj['config']['default_tags'] = [t.strip() for t in default_tags.split(',')]
 
-    if args.list_projects:
-        # projects = instance.download_projects(user_data.get_workspace_from_id())
-        if user_data.projects:
-            logger.info("\n{}".format(tabulate(
-                [s.__str__().split(',') for s in user_data.projects],
-                headers=["name","workspace"],
-                tablefmt="grid"
-            )))
-        else:
-            logger.info("no projects found")
+    if default_time_entry_start_days:
+        context.obj['config']['default_time_entry_window_start_days'] = default_time_entry_start_days
 
-    if args.list_tags:
-        if user_data.tags:
-            logger.info("\n{}".format(tabulate(
-                [s.__str__().split(',') for s in user_data.tags],
-                headers=["name", "workspace"],
-                tablefmt="grid"
-            )))
-        else:
-            logger.info("no tags found")
+    if default_time_entry_stop_days:
+        context.obj['config']['default_time_entry_window_stop_days'] = default_time_entry_stop_days
 
-    if args.list_time_entries:
-        if user_data.time_entries:
-            logger.info("\n{}".format(tabulate(
-                [s.__str__().split(',') for s in user_data.time_entries],
-                headers=["description", "project", "workspace", "duration", "tags"],
-                tablefmt="grid"
-            )))
-        else:
-            logger.info("no time entries found")
+    # We've updated the configuration internally, now update it on disk.
+    with open(config, 'w') as handle:
+        json.dump(context.obj['config'], handle, sort_keys=True, indent=4)
+
+    if show_config:
+        click.echo(context.obj['config'])
+
+    # Set up the command and downloader objects with the API key.
+    context.obj['commands'] = Commands(context.obj['config']['api_key'])
+    context.obj['downloader'] = Downloader(context.obj['config']['api_key'])
+
+
+######################################################
+
+
+assert(isinstance(main, click.Group))
+
+main.add_command(workspace_cli)
+main.add_command(project_cli)
+main.add_command(tag_cli)
+main.add_command(timer_cli)
+
+######################################################
+
+if __name__ == "__main__":
+    main(auto_envvar_prefix='TOGGL')

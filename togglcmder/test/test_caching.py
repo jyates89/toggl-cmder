@@ -1,25 +1,26 @@
 import unittest
 from datetime import datetime
+from tzlocal import get_localzone
 
-from toggl.caching import Caching
-from toggl.types.workspace import Workspace
-from toggl.types.project import Project
-from toggl.types.tag import Tag
-from toggl.types.user import User
-from toggl.types.time_entry import TimeEntry
+from togglcmder.toggl.caching import Caching
+from togglcmder.toggl.types.workspace import Workspace
+from togglcmder.toggl.types.project import Project
+from togglcmder.toggl.types.tag import Tag
+from togglcmder.toggl.types.user import User
+from togglcmder.toggl.types.time_entry import TimeEntry
 
 
 class TestCaching(unittest.TestCase):
     WORKSPACE = Workspace(
         name='Test Workspace',
         identifier=1,
-        last_updated=datetime.now())
+        last_updated=get_localzone().localize(datetime.now()))
 
     PROJECT = Project(
         name='Test Project',
         color=Project.Color.RED,
-        last_updated=datetime.now(),
-        created=datetime.now(),
+        last_updated=get_localzone().localize(datetime.now()),
+        created=get_localzone().localize(datetime.now()),
         identifier=1,
         workspace_identifier=1)
 
@@ -42,33 +43,33 @@ class TestCaching(unittest.TestCase):
 
     TIME_ENTRY_ONE = TimeEntry(
         description='Test Entry One',
-        start_time=datetime.now(),
+        start_time=get_localzone().localize(datetime.now()),
         identifier=1,
         duration=30,
         project_identifier=1,
         workspace_identifier=1,
-        stop_time=datetime.now(),
+        stop_time=get_localzone().localize(datetime.now()),
         tags=['Test Tag One', 'Test Tag Two'],
-        last_updated=datetime.now()
+        last_updated=get_localzone().localize(datetime.now())
     )
 
     TIME_ENTRY_TWO = TimeEntry(
         description='Test Entry Two',
-        start_time=datetime.now(),
+        start_time=get_localzone().localize(datetime.now()),
         identifier=2,
         duration=60,
         project_identifier=1,
         workspace_identifier=1,
-        stop_time=datetime.now(),
+        stop_time=get_localzone().localize(datetime.now()),
         tags=['Test Tag Three'],
-        last_updated=datetime.now()
+        last_updated=get_localzone().localize(datetime.now())
     )
 
     USER = User(
         name='Test User',
         api_token='1234',
         identifier=1,
-        last_updated=datetime.now())
+        last_updated=get_localzone().localize(datetime.now()))
 
     def setUp(self) -> None:
         self.__connection = Caching(cache_name=':memory:')
@@ -78,6 +79,7 @@ class TestCaching(unittest.TestCase):
 
     def test_workspace_caching(self):
         self.assertEqual(1, self.__connection.update_workspace_cache([TestCaching.WORKSPACE]))
+        print(self.__connection.retrieve_workspace_cache())
         self.assertEqual([TestCaching.WORKSPACE], self.__connection.retrieve_workspace_cache())
 
     def test_project_caching(self):

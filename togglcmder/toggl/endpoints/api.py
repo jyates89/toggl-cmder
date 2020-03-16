@@ -1,8 +1,8 @@
-from toggl.endpoints.time_entries import TimeEntries
-from toggl.endpoints.projects import Projects
-from toggl.endpoints.tags import Tags
-from toggl.endpoints.workspaces import Workspaces
-from toggl.endpoints.users import Users
+from togglcmder.toggl.endpoints.time_entries import TimeEntries
+from togglcmder.toggl.endpoints.projects import Projects
+from togglcmder.toggl.endpoints.tags import Tags
+from togglcmder.toggl.endpoints.workspaces import Workspaces
+from togglcmder.toggl.endpoints.users import Users
 
 
 class API(object):

@@ -1,13 +1,16 @@
 import unittest
 from datetime import datetime
 
-from toggl.filters import Filters
+from togglcmder.toggl.filters.time_entries import TimeEntries
+from togglcmder.toggl.filters.tags import Tags
+from togglcmder.toggl.filters.workspaces import Workspaces
+from togglcmder.toggl.filters.projects import Projects
 
-from toggl.types.project import Project
-from toggl.types.workspace import Workspace
-from toggl.types.tag import Tag
-from toggl.types.time_entry import TimeEntry
-from toggl.types.user import User
+from togglcmder.toggl.types.project import Project
+from togglcmder.toggl.types.workspace import Workspace
+from togglcmder.toggl.types.tag import Tag
+from togglcmder.toggl.types.time_entry import TimeEntry
+from togglcmder.toggl.types.user import User
 
 
 class TestFilters(unittest.TestCase):
@@ -86,58 +89,51 @@ class TestFilters(unittest.TestCase):
 
     def test_filter_on_workspace_id(self) -> None:
         self.assertEqual([TestFilters.WORKSPACE_ONE],
-                         Filters.filter_workspaces_on_id(
-                             TestFilters.WORKSPACE_ONE.identifier,
-                             [TestFilters.WORKSPACE_ONE, TestFilters.WORKSPACE_TWO]
+                         Workspaces.filter_on_identifier(
+                             [TestFilters.WORKSPACE_ONE, TestFilters.WORKSPACE_TWO],
+                             TestFilters.WORKSPACE_ONE.identifier
                          ))
 
-    def test_filter_projects_on_workspace_id(self) -> None:
+    def test_filter_projects_on_workspace(self) -> None:
         self.assertEqual([TestFilters.PROJECT_ONE],
-                         Filters.filter_projects_on_workspace_id(
-                             TestFilters.WORKSPACE_ONE.identifier,
-                             [TestFilters.PROJECT_ONE, TestFilters.PROJECT_TWO]
+                         Projects.filter_on_workspace(
+                             [TestFilters.PROJECT_ONE, TestFilters.PROJECT_TWO],
+                             TestFilters.WORKSPACE_ONE
                          ))
 
     def test_filter_projects_on_name(self) -> None:
         self.assertEqual([TestFilters.PROJECT_ONE],
-                         Filters.filter_projects_on_name(
-                             TestFilters.PROJECT_ONE.name,
-                             [TestFilters.PROJECT_ONE, TestFilters.PROJECT_TWO]
+                         Projects.filter_on_name(
+                             [TestFilters.PROJECT_ONE, TestFilters.PROJECT_TWO],
+                             TestFilters.PROJECT_ONE.name
                          ))
 
-    def test_filter_tags_on_workspace_id(self) -> None:
+    def test_filter_tags_on_workspace(self) -> None:
         self.assertEqual([],
-                         Filters.filter_tags_on_workspace_id(
-                             TestFilters.WORKSPACE_TWO.identifier,
-                             [TestFilters.TAG_ONE, TestFilters.TAG_TWO, TestFilters.TAG_THREE]
+                         Tags.filter_on_workspace(
+                             [TestFilters.TAG_ONE, TestFilters.TAG_TWO, TestFilters.TAG_THREE],
+                             TestFilters.WORKSPACE_TWO
                          ))
 
     def test_filter_tags_on_name(self) -> None:
         self.assertEqual([TestFilters.TAG_TWO],
-                         Filters.filter_tags_on_name(
-                             TestFilters.TAG_TWO.name,
-                             [TestFilters.TAG_ONE, TestFilters.TAG_TWO, TestFilters.TAG_THREE]
+                         Tags.filter_on_name(
+                             [TestFilters.TAG_ONE, TestFilters.TAG_TWO, TestFilters.TAG_THREE],
+                             TestFilters.TAG_TWO.name
                          ))
 
-    def test_filter_tags_on_time_entries(self) -> None:
-        self.assertEqual([TestFilters.TAG_ONE, TestFilters.TAG_TWO],
-                         Filters.filter_tags_on_time_entries(
-                             [TestFilters.TAG_ONE, TestFilters.TAG_TWO],
-                             [TestFilters.TIME_ENTRY_ONE, TestFilters.TIME_ENTRY_TWO]
-                         ))
-
-    def test_filter_time_entries_on_project_identifier(self) -> None:
+    def test_filter_time_entries_on_project(self) -> None:
         self.assertEqual([TestFilters.TIME_ENTRY_ONE, TestFilters.TIME_ENTRY_TWO],
-                         Filters.filter_time_entries_on_project_identifier(
-                             TestFilters.PROJECT_ONE.identifier,
-                             [TestFilters.TIME_ENTRY_ONE, TestFilters.TIME_ENTRY_TWO]
+                         TimeEntries.filter_on_project(
+                             [TestFilters.TIME_ENTRY_ONE, TestFilters.TIME_ENTRY_TWO],
+                             TestFilters.PROJECT_ONE
                          ))
 
     def test_filter_time_entries_on_tag_name(self) -> None:
         self.assertEqual([TestFilters.TIME_ENTRY_TWO],
-                         Filters.filter_time_entries_on_tag_name(
-                             TestFilters.TAG_THREE.name,
-                             [TestFilters.TIME_ENTRY_ONE, TestFilters.TIME_ENTRY_TWO]
+                         TimeEntries.filter_on_any_tags(
+                             [TestFilters.TIME_ENTRY_ONE, TestFilters.TIME_ENTRY_TWO],
+                             [TestFilters.TAG_THREE]
                          ))
 
 

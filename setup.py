@@ -14,14 +14,18 @@ setup(
     description="Utility to control Toggl timers via the REST API.",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    include_package_data=True,
     packages=find_packages(),
+    install_requires=[
+        'Click'
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent"
     ],
     entry_points={
       'console_scripts': [
-          'toggle_cmder = togglcmder.main:main'
+          'togglcmder = togglcmder.__main__:main'
       ]
     },
     python_requires='>=3.6'
