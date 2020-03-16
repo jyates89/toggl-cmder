@@ -1,14 +1,20 @@
 import sqlite3
 from sqlite3 import IntegrityError
+import logging
 
 from typing import List
 from datetime import datetime
 
-from toggl.types.workspace import Workspace
-from toggl.types.time_entry import TimeEntry
-from toggl.types.user import User
-from toggl.types.tag import Tag
-from toggl.types.project import Project
+from togglcmder.toggl.types.workspace import Workspace
+from togglcmder.toggl.builders.workspace_builder import WorkspaceBuilder
+from togglcmder.toggl.types.time_entry import TimeEntry
+from togglcmder.toggl.builders.time_entry_builder import TimeEntryBuilder
+from togglcmder.toggl.types.user import User
+from togglcmder.toggl.builders.user_builder import UserBuilder
+from togglcmder.toggl.types.tag import Tag
+from togglcmder.toggl.builders.tag_builder import TagBuilder
+from togglcmder.toggl.types.project import Project
+from togglcmder.toggl.builders.project_builder import ProjectBuilder
 
 
 class Caching(object):
@@ -28,7 +34,7 @@ class Caching(object):
         created TIMESTAMP NOT NULL,
         identifier INTEGER PRIMARY KEY,
         workspace_identifier INTEGER NOT NULL,
-        FOREIGN KEY (workspace_identifier) REFERENCES workspaces (identifier)
+        FOREIGN KEY (workspace_identifier) REFERENCES workspaces (identifier) ON DELETE CASCADE
     )
     '''
 
@@ -37,7 +43,7 @@ class Caching(object):
         name TEXT,
         identifier INTEGER PRIMARY KEY,
         workspace_identifier INTEGER,
-        FOREIGN KEY (workspace_identifier) REFERENCES workspaces (identifier)
+        FOREIGN KEY (workspace_identifier) REFERENCES workspaces (identifier) ON DELETE CASCADE
     )
     '''
 
@@ -51,7 +57,7 @@ class Caching(object):
         project_identifier INTEGER,
         workspace_identifier INTEGER NOT NULL,
         last_updated TIMESTAMP,
-        FOREIGN KEY (project_identifier) REFERENCES projects (identifier),
+        FOREIGN KEY (project_identifier) REFERENCES projects (identifier) ON DELETE CASCADE,
         FOREIGN KEY (workspace_identifier) REFERENCES workspaces (identifier)
     )
     '''
@@ -60,8 +66,8 @@ class Caching(object):
     CREATE TABLE IF NOT EXISTS time_entry_tags (
         tag_identifier INTEGER NOT NULL,
         time_entry_identifier INTEGER NOT NULL,
-        FOREIGN KEY (tag_identifier) REFERENCES tags (identifier),
-        FOREIGN KEY (time_entry_identifier) REFERENCES time_entries (identifier)
+        FOREIGN KEY (tag_identifier) REFERENCES tags (identifier) ON DELETE CASCADE,
+        FOREIGN KEY (time_entry_identifier) REFERENCES time_entries (identifier) ON DELETE CASCADE 
     )
     '''
 
@@ -76,6 +82,7 @@ class Caching(object):
 
     def __init__(self, *, cache_name: str = "cache.db"):
         self.__connection = sqlite3.connect(cache_name)
+        self.__connection.set_trace_callback(logging.getLogger(__name__).debug)
         self.__cursor = self.__connection.cursor()
 
         self.__cursor.execute("PRAGMA foreign_keys = 1")
@@ -89,6 +96,11 @@ class Caching(object):
         self.__cursor.execute(Caching.USER_TABLE)
 
         self.__connection.commit()
+
+        self.__workspaces: List[Workspace] = []
+        self.__projects: List[Project] = []
+        self.__tags: List[Tag] = []
+        self.__time_entries: List[TimeEntry] = []
 
     def __del__(self):
         self.__connection.close()
@@ -129,11 +141,11 @@ class Caching(object):
         results = self.__cursor.fetchall()
         if results:
             return [
-                Workspace(
-                    name=result[0],
-                    identifier=result[1],
-                    last_updated=datetime.fromtimestamp(result[2])
-                ) for result in results
+                WorkspaceBuilder()
+                    .name(result[0])
+                    .identifier(result[1])
+                    .last_updated(epoch=result[2]).build()
+                for result in results
             ]
 
     def update_user_cache(self, user: User) -> int:
@@ -172,12 +184,11 @@ class Caching(object):
         self.__cursor.execute(sql)
         results = self.__cursor.fetchone()
         if results:
-            return User(
-                name=results[0],
-                api_token=results[1],
-                identifier=results[2],
-                last_updated=datetime.fromtimestamp(results[3])
-            )
+            return UserBuilder()\
+                .name(results[0])\
+                .api_token(results[1])\
+                .identifier(results[2])\
+                .last_updated(epoch=results[3]).build()
 
     def update_project_cache(self, projects: List[Project]) -> int:
         insert_sql = '''
@@ -198,7 +209,7 @@ class Caching(object):
                     insert_sql, (project.name,
                                  project.color.value,
                                  project.last_updated.timestamp(),
-                                 project.created.timestamp(),
+                                 project.created.timestamp() if project.created else datetime.now().timestamp(),
                                  project.identifier,
                                  project.workspace_identifier))
             except IntegrityError:
@@ -221,15 +232,24 @@ class Caching(object):
         results = self.__cursor.fetchall()
         if results:
             return [
-                Project(
-                    name=result[0],
-                    color=Project.Color(result[1]),
-                    last_updated=datetime.fromtimestamp(result[2]),
-                    created=datetime.fromtimestamp(result[3]),
-                    identifier=result[4],
-                    workspace_identifier=result[5]
-                ) for result in results
+                ProjectBuilder()
+                    .name(result[0])
+                    .color(result[1])
+                    .last_updated(epoch=result[2])
+                    .created(epoch=result[3])
+                    .identifier(result[4])
+                    .workspace_identifier(result[5]).build()
+                for result in results
             ]
+
+    def remove_project_from_cache(self, project: Project) -> None:
+        sql = '''
+            DELETE FROM projects
+            WHERE identifier=?
+        '''
+        self.__cursor.execute(sql, (project.identifier,))
+
+        self.__connection.commit()
 
     def update_tag_cache(self, tags: List[Tag]) -> int:
         insert_sql = '''
@@ -244,7 +264,7 @@ class Caching(object):
             WHERE identifier=?
         '''
 
-        rows_affected=0
+        rows_affected = 0
         for tag in tags:
             try:
                 self.__cursor.execute(
@@ -270,12 +290,27 @@ class Caching(object):
         results = self.__cursor.fetchall()
         if results:
             return [
-                Tag(
-                    name=result[0],
-                    identifier=result[1],
-                    workspace_identifier=result[2]
-                ) for result in results
+                TagBuilder()
+                    .name(result[0])
+                    .identifier(result[1])
+                    .workspace_identifier(result[2]).build()
+                for result in results
             ]
+
+    def remove_tag_from_cache(self, tag: Tag) -> None:
+        tag_removal_sql = '''
+            DELETE FROM tags
+            WHERE identifier=?
+        '''
+        self.__cursor.execute(tag_removal_sql, (tag.identifier,))
+
+        join_table_removal_sql = '''
+            DELETE FROM time_entry_tags
+            WHERE tag_identifier=?
+        '''
+        self.__cursor.execute(join_table_removal_sql, (tag.identifier,))
+
+        self.__connection.commit()
 
     def __retrieve_time_entry_tags_join(self, time_entry_identifier: int) -> List[tuple]:
         sql = '''
@@ -337,13 +372,12 @@ class Caching(object):
         tag_rows = self.retrieve_tag_cache()
         rows_affected = 0
 
-
         for time_entry in time_entries:
             try:
                 self.__cursor.execute(
                     insert_sql, (time_entry.description,
                                  time_entry.start_time.timestamp(),
-                                 time_entry.stop_time.timestamp(),
+                                 None if not time_entry.stop_time else time_entry.stop_time.timestamp(),
                                  time_entry.duration,
                                  time_entry.identifier,
                                  time_entry.project_identifier,
@@ -353,7 +387,7 @@ class Caching(object):
                 self.__cursor.execute(
                     update_sql, (time_entry.description,
                                  time_entry.start_time.timestamp(),
-                                 time_entry.stop_time.timestamp(),
+                                 None if not time_entry.stop_time else time_entry.stop_time.timestamp(),
                                  time_entry.duration,
                                  time_entry.project_identifier,
                                  time_entry.workspace_identifier,
@@ -362,16 +396,17 @@ class Caching(object):
             rows_affected += self.__cursor.rowcount
 
             tag_ids = []
-            for tag in time_entry.tags:
-                for tag_row in tag_rows:
-                    if tag == tag_row.name:
-                        tag_ids.append(tag_row.identifier)
-                        break
-            for tag_id in self.__check_existing(tag_ids, time_entry.identifier):
-                self.__cursor.execute(
-                    insert_time_entry_tag_sql,
-                    (tag_id,
-                     time_entry.identifier))
+            if time_entry.tags:
+                for tag in time_entry.tags:
+                    for tag_row in tag_rows:
+                        if tag == tag_row.name:
+                            tag_ids.append(tag_row.identifier)
+                            break
+                for tag_id in self.__check_existing(tag_ids, time_entry.identifier):
+                    self.__cursor.execute(
+                        insert_time_entry_tag_sql,
+                        (tag_id,
+                         time_entry.identifier))
 
         self.__connection.commit()
 
@@ -396,16 +431,50 @@ class Caching(object):
         results = self.__cursor.fetchall()
         for result in results:
             tag_results = self.__retrieve_time_entry_tags_join(result[4])
-            time_entries.append(TimeEntry(
-                description=result[0],
-                start_time=datetime.fromtimestamp(result[1]),
-                stop_time=datetime.fromtimestamp(result[2]),
-                duration=result[3],
-                identifier=result[4],
-                project_identifier=result[5],
-                workspace_identifier=result[6],
-                last_updated=datetime.fromtimestamp(result[7]),
-                tags=[tag_result[0] for tag_result in tag_results]
-            ))
+
+            builder = TimeEntryBuilder()\
+                .description(result[0])\
+                .start_time(epoch=result[1])\
+                .stop_time(epoch=result[2])\
+                .duration(result[3])\
+                .identifier(result[4])\
+                .project_identifier(result[5])\
+                .workspace_identifier(result[6])\
+                .last_updated(epoch=result[7])\
+                .tags([tag_result[0] for tag_result in tag_results])
+            time_entries.append(builder.build())
 
         return time_entries
+
+    def remove_time_entry_from_cache(self, time_entry: TimeEntry) -> None:
+        entry_removal_sql = '''
+            DELETE FROM time_entries
+            WHERE identifier=?
+        '''
+        self.__cursor.execute(entry_removal_sql, (time_entry.identifier,))
+
+        joined_entry_removal_sql = '''
+            DELETE FROM time_entry_tags
+            WHERE time_entry_identifier=?
+        '''
+        self.__cursor.execute(joined_entry_removal_sql, (time_entry.identifier,))
+
+        self.__connection.commit()
+
+    def get_workspace_identifier(self, workspace_name: str) -> int:
+        sql = """
+            SELECT identifier
+            FROM workspaces
+            WHERE name=?
+        """
+        self.__cursor.execute(sql, (workspace_name,))
+        return self.__cursor.fetchone()[0]
+
+    def get_project_identifier(self, project_name: str) -> int:
+        sql = """
+            SELECT identifier
+            FROM projects
+            WHERE name=?
+        """
+        self.__cursor.execute(sql, (project_name,))
+        return self.__cursor.fetchone()[0]

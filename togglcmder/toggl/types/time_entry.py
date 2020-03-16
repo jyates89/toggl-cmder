@@ -1,8 +1,10 @@
 from datetime import datetime
 
 from typing import List, Optional
+from functools import total_ordering
 
 
+@total_ordering
 class TimeEntry(object):
     def __init__(self, *, description: str, start_time: datetime,
                  identifier: Optional[int] = None,
@@ -36,28 +38,23 @@ class TimeEntry(object):
             and self.__tags == other.tags \
             and self.__last_updated == other.last_updated
 
+    def __lt__(self, other):
+        if not isinstance(other, TimeEntry):
+            raise NotImplemented
+        return self.__start_time < other.start_time
+
     def __str__(self):
-        return """
-            description = {},
-            start_time = {},
-            stop_time = {},
-            duration = {},
-            identifier = {},
-            project_identifier = {},
-            workspace_identifier = {},
-            tags = {},
-            last_updated = {}
-        """.format(
+        return "{},{},{},{},{},{},{},{},{}".format(
             self.description,
             self.start_time.isoformat(),
-            self.stop_time.isoformat(),
+            self.stop_time.isoformat() if self.stop_time else None,
             self.duration,
             self.identifier,
             self.project_identifier,
             self.workspace_identifier,
             self.tags,
-            self.last_updated
-        )
+            self.last_updated)
+
     @property
     def description(self) -> str:
         return self.__description

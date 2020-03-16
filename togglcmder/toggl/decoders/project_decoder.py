@@ -1,7 +1,6 @@
 from json import JSONDecoder
 
-from toggl.builders.project_builder import ProjectBuilder
-from toggl.types.project import Project
+from togglcmder.toggl.builders.project_builder import ProjectBuilder
 
 
 class ProjectDecoder(JSONDecoder):
@@ -21,9 +20,9 @@ class ProjectDecoder(JSONDecoder):
                 .identifier(obj['id'])\
                 .name(obj['name'])\
                 .workspace_identifier(obj['wid'])\
-                .color(obj['color'])\
-                .last_updated(obj['at'])\
-                .created(obj.get('created_at', None))\
+                .color(int(obj['color']))\
+                .last_updated(last_update=obj['at'])\
+                .created(created=obj.get('created_at', None))\
                 .build()
 
         return obj

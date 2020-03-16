@@ -1,6 +1,6 @@
 from json import JSONDecoder
 
-from toggl.builders.workspace_builder import WorkspaceBuilder
+from togglcmder.toggl.builders.workspace_builder import WorkspaceBuilder
 
 
 class WorkspaceDecoder(JSONDecoder):
@@ -19,7 +19,7 @@ class WorkspaceDecoder(JSONDecoder):
             return WorkspaceBuilder()\
                 .identifier(obj['id'])\
                 .name(obj['name'])\
-                .last_updated(obj['at'])\
+                .last_updated(last_update=obj['at'])\
                 .build()
 
         return obj

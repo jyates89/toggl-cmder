@@ -1,6 +1,6 @@
 from json import JSONEncoder
 
-from toggl.types.tag import Tag
+from togglcmder.toggl.types.tag import Tag
 
 
 class TagEncoder(JSONEncoder):

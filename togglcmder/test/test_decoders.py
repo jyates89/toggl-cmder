@@ -4,20 +4,20 @@ import json
 from datetime import datetime
 from pytz import timezone
 
-from toggl.types.project import Project
-from toggl.decoders.project_decoder import ProjectDecoder
+from togglcmder.toggl.types.project import Project
+from togglcmder.toggl.decoders.project_decoder import ProjectDecoder
 
-from toggl.types.tag import Tag
-from toggl.decoders.tag_decoder import TagDecoder
+from togglcmder.toggl.types.tag import Tag
+from togglcmder.toggl.decoders.tag_decoder import TagDecoder
 
-from toggl.types.time_entry import TimeEntry
-from toggl.decoders.time_entry_decoder import TimeEntryDecoder
+from togglcmder.toggl.types.time_entry import TimeEntry
+from togglcmder.toggl.decoders.time_entry_decoder import TimeEntryDecoder
 
-from toggl.types.user import User
-from toggl.decoders.user_decoder import UserDecoder
+from togglcmder.toggl.types.user import User
+from togglcmder.toggl.decoders.user_decoder import UserDecoder
 
-from toggl.types.workspace import Workspace
-from toggl.decoders.workspace_decoder import WorkspaceDecoder
+from togglcmder.toggl.types.workspace import Workspace
+from togglcmder.toggl.decoders.workspace_decoder import WorkspaceDecoder
 
 
 class TestDecoders(unittest.TestCase):

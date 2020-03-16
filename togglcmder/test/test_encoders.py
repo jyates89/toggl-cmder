@@ -3,13 +3,13 @@ import json
 from datetime import datetime, timedelta
 from pytz import timezone
 
-from toggl.builders.time_entry_builder import TimeEntryBuilder
-from toggl.builders.project_builder import ProjectBuilder
-from toggl.builders.tag_builder import TagBuilder
+from togglcmder.toggl.builders.time_entry_builder import TimeEntryBuilder
+from togglcmder.toggl.builders.project_builder import ProjectBuilder
+from togglcmder.toggl.builders.tag_builder import TagBuilder
 
-from toggl.encoders.project_encoder import ProjectEncoder
-from toggl.encoders.time_entry_encoder import TimeEntryEncoder
-from toggl.encoders.tag_encoder import TagEncoder
+from togglcmder.toggl.encoders.project_encoder import ProjectEncoder
+from togglcmder.toggl.encoders.time_entry_encoder import TimeEntryEncoder
+from togglcmder.toggl.encoders.tag_encoder import TagEncoder
 
 
 class TestEncoders(unittest.TestCase):
@@ -58,6 +58,7 @@ class TestEncoders(unittest.TestCase):
                     'Another tag goes here.'
                 ],
                 'pid': 1234,
+                'wid': 1,
                 'start': current_time.isoformat(),
                 'duration': delta_time.seconds,
                 'stop': stop_time.isoformat(),
@@ -67,10 +68,11 @@ class TestEncoders(unittest.TestCase):
 
         time_entry = TimeEntryBuilder()\
             .description(expected_time_entry['time_entry']['description'])\
+            .workspace_identifier(expected_time_entry['time_entry']['wid'])\
             .project_identifier(expected_time_entry['time_entry']['pid'])\
-            .start_time(current_time.isoformat())\
+            .start_time(start_time=current_time.isoformat())\
             .duration(delta_time.seconds)\
-            .stop_time(stop_time.isoformat())\
+            .stop_time(stop_time=stop_time.isoformat())\
             .tags(expected_time_entry['time_entry']['tags'])\
             .build()
 

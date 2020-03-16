@@ -1,13 +1,19 @@
 from __future__ import annotations
+from typing import Optional
 
-from toggl.types.tag import Tag
+from togglcmder.toggl.types.tag import Tag
 
 
 class TagBuilder(object):
-    def __init__(self):
-        self.__identifier = None
-        self.__name = None
-        self.__workspace_identifier = None
+    def __init__(self, tag: Optional[Tag] = None):
+        if tag is not None:
+            self.__identifier = tag.identifier
+            self.__name = tag.name
+            self.__workspace_identifier = tag.workspace_identifier
+        else:
+            self.__identifier = None
+            self.__name = None
+            self.__workspace_identifier = None
 
     def identifier(self, identifier: int) -> TagBuilder:
         self.__identifier = identifier

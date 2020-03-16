@@ -1,6 +1,6 @@
 from json import JSONEncoder
 
-from toggl.types.project import Project
+from togglcmder.toggl.types.project import Project
 
 
 class ProjectEncoder(JSONEncoder):

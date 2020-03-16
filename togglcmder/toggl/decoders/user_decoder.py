@@ -1,6 +1,6 @@
 from json import JSONDecoder
 
-from toggl.builders.user_builder import UserBuilder
+from togglcmder.toggl.builders.user_builder import UserBuilder
 
 
 class UserDecoder(JSONDecoder):
@@ -20,7 +20,7 @@ class UserDecoder(JSONDecoder):
                 .identifier(obj['id'])\
                 .name(obj['fullname'])\
                 .api_token(obj['api_token'])\
-                .last_updated(obj['at'])\
+                .last_updated(last_update=obj['at'])\
                 .build()
 
         return obj
