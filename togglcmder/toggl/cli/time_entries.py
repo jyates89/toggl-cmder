@@ -54,9 +54,9 @@ def validated_time(date_time: str) -> datetime:
             return now + timedelta(seconds=float(value))
 
     try:
-        return get_localzone().localize(datetime.strptime(date_time, "%Y-%m-%d"))
+        return get_localzone().localize(datetime.fromisoformat(date_time))
     except ValueError:
-        raise RuntimeError(f"Not a valid date: '{date_time}'.")
+        raise RuntimeError(f"Not a valid time: '{date_time}'.")
 
 
 def sync_or_retrieve_time_entries(context_obj: dict, workspace: Workspace, start: datetime, stop: datetime, *,
@@ -243,6 +243,9 @@ def timer_add(context: click.Context,
         time_entry_builder.stop_time(dt=stop_time)
     if duration:
         time_entry_builder.duration(duration)
+    elif stop_time:
+        time_entry_builder.duration(
+            int(stop_time.timestamp() - start_time.timestamp()))
     if tags:
         time_entry_builder.tags(tags.split(','))
 
@@ -670,48 +673,26 @@ def timer_list(context: click.Context, description: str, sort_by: str):
 
     rows = []
     for current_workspace in workspaces:
-        for current_project in projects:
-            entries = TimeEntryFilter.filter_on_project(
-                TimeEntryFilter.filter_on_workspace(
-                    time_entries, current_workspace),
-                current_project
-            )
+        reduced_entries = []
+        # get all of the descriptions available
+        descriptions = [entry.description for entry in time_entries]
+        # remove any duplicates
+        descriptions = list(dict.fromkeys(descriptions))
+        for current_description in descriptions:
+            # filter the actual entries on each unique description
+            entries_on_description = TimeEntryFilter.filter_on_description(time_entries, current_description)
+            # reduce down the entries with that description into a single entry
+            combined_entry = functools.reduce(lambda x, y:
+                                              TimeEntryBuilder(x).duration(x.duration + y.duration).build(),
+                                              entries_on_description)
+            reduced_entries.append(combined_entry)
 
-            reduced_entries = []
-            # get all of the descriptions available
-            descriptions = [entry.description for entry in entries]
-            # remove any duplicates
-            descriptions = list(dict.fromkeys(descriptions))
-            for current_description in descriptions:
-                # filter the actual entries on each unique description
-                entries_on_description = TimeEntryFilter.filter_on_description(entries, current_description)
-                # reduce down the entries with that description into a single entry
-                combined_entry = functools.reduce(lambda x, y:
-                                                  TimeEntryBuilder(x).duration(x.duration + y.duration).build(),
-                                                  entries_on_description)
-                reduced_entries.append(combined_entry)
+        for entry in reduced_entries:
+            project = ProjectFilter.filter_on_identifier(projects,
+                                                         entry.project_identifier)
             rows.extend(
                 TimeEntryView(
-                    reduced_entries, current_project, current_workspace
-                ).values()
-            )
-        if not projects:
-            reduced_entries = []
-            # get all of the descriptions available
-            descriptions = [entry.description for entry in time_entries]
-            # remove any duplicates
-            descriptions = list(dict.fromkeys(descriptions))
-            for current_description in descriptions:
-                # filter the actual entries on each unique description
-                entries_on_description = TimeEntryFilter.filter_on_description(time_entries, current_description)
-                # reduce down the entries with that description into a single entry
-                combined_entry = functools.reduce(lambda x, y:
-                                                  TimeEntryBuilder(x).duration(x.duration + y.duration).build(),
-                                                  entries_on_description)
-                reduced_entries.append(combined_entry)
-            rows.extend(
-                TimeEntryView(
-                    reduced_entries, None, current_workspace
+                    [entry], project[0] if project else None, current_workspace
                 ).values()
             )
 
