@@ -135,11 +135,35 @@ def main(context: click.Context,
             'time_entries': []
         }
     }
+    context.obj['config']['api_key'] = None
+    context.obj['config']['default_workspace'] = None
+    context.obj['config']['default_project'] = None
+    context.obj['config']['default_tags'] = None
+
     # Set up the paths paths that we need.
     app_dir = click.get_app_dir('togglcmder')
 
-    cache = Caching(cache_name=os.path.join(app_dir, 'cache.db'))
-    context.obj['cache'] = cache
+    # Configuration file is automatically created and stored in the application
+    # directory for the user. If it exists, it's simply loaded.
+    config = os.path.join(app_dir, 'toggl.json')
+    if not os.path.exists(app_dir):
+        os.mkdir(app_dir)
+
+    if not os.path.exists(config):
+        with open(config, 'w') as handle:
+            json.dump(context.obj['config'], handle, sort_keys=True, indent=4)
+    else:
+        with open(config, 'r') as handle:
+            # Merge the defaults in with the actual configuration.
+            context.obj['config'] = {**context.obj['config'], **json.load(handle)}
+
+    # If the user provides the API key, we overwrite the key from the configuration
+    # file and use that for all future requests.
+    if not api_key and not context.obj['config']['api_key']:
+        click.echo(click.style('ERROR', fg='red', bold=True) +
+                   ': there is no API key yet.. please insert the key into'
+                   f' {config} or provide it with the "--api-key" argument!')
+        return
 
     logger = logging.getLogger()
 
@@ -161,20 +185,9 @@ def main(context: click.Context,
     # allows more verbosity than just -v.
     logger.setLevel(60 - ((3 + verbosity) * 10))
 
-    # Configuration file is automatically created and stored in the application
-    # directory for the user. If it exists, it's simply loaded.
-    config = os.path.join(app_dir, 'toggl.json')
-    if not os.path.isdir(app_dir):
-        os.mkdir(app_dir)
-        with open(config, 'w') as handle:
-            json.dump(context.obj['config'], handle, sort_keys=True, indent=4)
-    else:
-        with open(config, 'r') as handle:
-            # Merge the defaults in with the actual configuration.
-            context.obj['config'] = {**context.obj['config'], **json.load(handle)}
+    cache = Caching(cache_name=os.path.join(app_dir, 'cache.db'))
+    context.obj['cache'] = cache
 
-    # If the user provides the API key, we overwrite the key from the configuration
-    # file and use that for all future requests.
     if api_key:
         context.obj['config']['api_key'] = api_key
 

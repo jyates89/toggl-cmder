@@ -5,6 +5,9 @@ from togglcmder.version import __version__
 with open("README.md", "r") as readme:
     long_description = readme.read()
 
+with open("requirements.txt", "r") as requirements:
+    required_packages = requirements.read()
+
 setup(
     name='togglcmder',
     version=__version__,
@@ -16,9 +19,7 @@ setup(
     long_description_content_type="text/markdown",
     include_package_data=True,
     packages=find_packages(),
-    install_requires=[
-        'Click'
-    ],
+    install_requires=required_packages.split(),
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent"
