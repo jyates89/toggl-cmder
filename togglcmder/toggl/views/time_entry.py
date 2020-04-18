@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from datetime import datetime, timedelta
 
@@ -15,7 +15,7 @@ class TimeEntry(object):
 
     def __init__(self,
                  time_entries: List[TimeEntryType],
-                 project: ProjectType,
+                 project: Optional[ProjectType],
                  workspace: WorkspaceType):
         self.__time_entries = time_entries
         self.__project = project
