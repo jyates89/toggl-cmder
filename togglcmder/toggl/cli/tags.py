@@ -78,7 +78,7 @@ def tags(context: click.Context, workspace: str):
               required=True)
 @click.pass_context
 def tag_add(context: click.Context, name: str):
-    workspace = retrieve_workspace_from_context(context)
+    workspace = retrieve_workspace_from_context(context.obj)
     if not workspace:
         # Workspace required to add a new tag.
         click.echo(click.style('ERROR', fg='red') +
@@ -130,7 +130,7 @@ def tag_add(context: click.Context, name: str):
               show_default=True)
 @click.pass_context
 def tag_delete(context: click.Context, name: str, multiple: bool):
-    workspace = retrieve_workspace_from_context(context)
+    workspace = retrieve_workspace_from_context(context.obj)
     if not workspace:
         # Workspace filter was not strict enough or there is no default
         # workspace configured.
@@ -192,7 +192,7 @@ def tag_delete(context: click.Context, name: str, multiple: bool):
               required=True)
 @click.pass_context
 def tag_update(context: click.Context, old_name: str, new_name: str):
-    workspace = retrieve_workspace_from_context(context)
+    workspace = retrieve_workspace_from_context(context.obj)
     if not workspace:
         # Workspace filter was not strict enough or there is no default
         # workspace configured.

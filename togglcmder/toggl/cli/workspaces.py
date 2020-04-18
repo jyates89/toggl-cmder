@@ -26,8 +26,8 @@ def sync_or_retrieve_workspaces(context_obj: dict) -> List[Workspace]:
     return current_workspaces
 
 
-def retrieve_workspace_from_context(context: click.Context) -> Optional[Workspace]:
-    workspace = context.obj['data']['workspace']
+def retrieve_workspace_from_context(context: dict) -> Optional[Workspace]:
+    workspace = context['data']['workspace']
     return workspace
 
 

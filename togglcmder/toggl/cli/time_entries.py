@@ -128,13 +128,24 @@ def timers(context: click.Context,
 
     if project_name and not projects:
         # No projects exist in this workspace, but the user requested to filter on one.
-        return
+        click.echo(click.style('WARNING', fg='yellow') +
+                   f': no projects exist in this workspace!')
+        # We must exit because returning would just go to the next handler
+        # and start a timer regardless.
+        exit(1)
 
     if projects and project_name:
         # If there is a specified project name then we can filter on it.
         projects = ProjectFilter.filter_on_name(
             projects,
             project_name)
+        if not projects:
+            click.echo(click.style('WARNING', fg='yellow') +
+                       f': no projects exist with this name("{project_name}")'
+                       f' in the current workspace!')
+            # We must exit because returning would just go to the next handler
+            # and start a timer regardless.
+            exit(1)
 
         # If a single project was found, we can store it too.
         projects_found = len(projects)
@@ -164,13 +175,14 @@ def timers(context: click.Context,
 
     time_entries = []
     for current_workspace in workspaces:
-        for current_project in projects:
-            if current_project.workspace_identifier == current_workspace.identifier:
-                synced_entries = sync_or_retrieve_time_entries(
-                    context.obj, current_workspace, then, now, project=current_project)
-                if synced_entries:
-                    time_entries.extend(synced_entries)
-        if not projects:
+        if project_name:
+            for current_project in projects:
+                if current_project.workspace_identifier == current_workspace.identifier:
+                    synced_entries = sync_or_retrieve_time_entries(
+                        context.obj, current_workspace, then, now, project=current_project)
+                    if synced_entries:
+                        time_entries.extend(synced_entries)
+        else:
             synced_entries = sync_or_retrieve_time_entries(
                 context.obj, current_workspace, then, now)
             if synced_entries:
@@ -203,7 +215,7 @@ def timer_add(context: click.Context,
               stop_time: datetime,
               duration: int,
               tags: str):
-    workspace = retrieve_workspace_from_context(context)
+    workspace = retrieve_workspace_from_context(context.obj)
     if not workspace:
         # Workspace filter was not strict enough or there is no default
         # workspace configured.
@@ -231,7 +243,7 @@ def timer_add(context: click.Context,
     time_entry_builder = TimeEntryBuilder()
     time_entry_builder.workspace_identifier(workspace.identifier)
 
-    project = retrieve_project_from_context(context)
+    project = retrieve_project_from_context(context.obj)
     if project:
         time_entry_builder.project_identifier(project.identifier)
 
@@ -277,7 +289,7 @@ def timer_add(context: click.Context,
 @click.option('--tags')
 @click.pass_context
 def timer_delete(context: click.Context, description: str, multiple: bool, tags: str):
-    workspace = retrieve_workspace_from_context(context)
+    workspace = retrieve_workspace_from_context(context.obj)
     if not workspace:
         # Workspace filter was not strict enough or there is no default
         # workspace configured.
@@ -372,7 +384,7 @@ def timer_update(context: click.Context,
                  new_duration: int,
                  new_stop_time: datetime,
                  multiple: bool):
-    workspace = retrieve_workspace_from_context(context)
+    workspace = retrieve_workspace_from_context(context.obj)
     if not workspace:
         # Workspace filter was not strict enough or there is no default
         # workspace configured.
@@ -381,9 +393,9 @@ def timer_update(context: click.Context,
                    ' ) when updating a timer.')
         return
 
-    if not old_description or not old_tags:
+    if not old_description and not old_tags:
         click.echo(click.style('ERROR', fg='red') +
-                   f': either description or tags must be specified when deleting a timer.')
+                   f': either description or tags must be specified when updating a timer.')
         return
 
     time_entries = context.obj['data']['time_entries']
@@ -447,10 +459,10 @@ def timer_update(context: click.Context,
 
     additional_tags: Optional[List[Tag]] = None
     if add_tags:
-        current_tags = TagFilter.filter_on_names(
+        additional_tags = TagFilter.filter_on_names(
             current_tags, add_tags.split(',')
         )
-        if not current_tags:
+        if not additional_tags:
             click.echo(click.style('ERROR', fg='red') +
                        f': no tags found with the specified names in --add-tags.')
             return
@@ -459,10 +471,10 @@ def timer_update(context: click.Context,
 
     removed_tags: Optional[List[Tag]] = None
     if remove_tags:
-        current_tags = TagFilter.filter_on_names(
+        removed_tags = TagFilter.filter_on_names(
             current_tags, remove_tags.split(',')
         )
-        if not current_tags:
+        if not removed_tags:
             click.echo(click.style('ERROR', fg='red') +
                        f': no tags found with the specified names in --remove-tags.')
             return
@@ -505,6 +517,7 @@ def timer_update(context: click.Context,
                    f': failed to update the timer(s). An exception has been logged;'
                    ' check the logs for more information.')
 
+
 @timers.command('start',
                 short_help='Start a new running timer.',
                 help='Start a new running timer. Has an implicit start time of '
@@ -516,7 +529,7 @@ def timer_update(context: click.Context,
 def timer_start(context: click.Context, description: str, tags: str):
     time_entry_builder = TimeEntryBuilder()
 
-    workspace = retrieve_workspace_from_context(context)
+    workspace = retrieve_workspace_from_context(context.obj)
     if not workspace:
         # Workspace filter was not strict enough or there is no default
         # workspace configured.
@@ -537,14 +550,15 @@ def timer_start(context: click.Context, description: str, tags: str):
             return
         time_entry_builder.tags([tag.name for tag in current_tags])
 
-    project = retrieve_project_from_context(context)
+    project = retrieve_project_from_context(context.obj)
     if project:
         time_entry_builder.project_identifier(project.identifier)
 
     if description:
         time_entry_builder.description(description)
 
-    time_entry_builder.start_time(dt=datetime.now(tz=get_localzone()))
+    start_time = datetime.now(tz=get_localzone())
+    time_entry_builder.start_time(dt=start_time)
 
     caching = retrieve_cache_from_context(context.obj)
     commands = retrieve_commands_from_context(context.obj)
@@ -554,7 +568,7 @@ def timer_start(context: click.Context, description: str, tags: str):
         entry = commands.start_time_entry(entry)
         click.echo(click.style('SUCCESS', fg='green') +
                    f': started new time entry({entry.description}) in'
-                   f' workspace({workspace.name}).')
+                   f' workspace({workspace.name}); start = {start_time.isoformat()}.')
         caching.update_time_entry_cache([entry])
 
     except HTTPError as e:
@@ -595,16 +609,28 @@ def timer_stop(context: click.Context):
                 help='Get the current running timer, if one exists.')
 @click.pass_context
 def timer_current(context: click.Context):
-    project = retrieve_project_from_context(context)
-    workspace = retrieve_workspace_from_context(context)
-
     downloader = retrieve_downloader_from_context(context.obj)
+
+    workspaces = context.obj['data']['workspaces']
+    projects = context.obj['data']['projects']
 
     try:
         entry = downloader.get_current_time_entry()
         if not entry:
             click.echo('No entry is currently running.')
         else:
+            workspace = WorkspaceFilter.filter_on_identifier(
+                workspaces,
+                entry.workspace_identifier
+            )[0]
+
+            project = None
+            if entry.project_identifier:
+                project = ProjectFilter.filter_on_identifier(
+                    projects,
+                    entry.project_identifier
+                )[0]
+
             time_entry_view = TimeEntryView(
                 [entry],
                 project,
@@ -642,7 +668,7 @@ def timer_resume(context: click.Context):
         started_entry = commands.start_time_entry(time_entry_builder.build())
         if started_entry:
             caching.update_time_entry_cache([started_entry])
-        click.echo(click.style('SUCCESS', fg='green', bold=True) +
+        click.echo(click.style('SUCCESS', fg='green') +
                    f': Resumed time entry({started_entry.description}).')
     except HTTPError as e:
         logging.getLogger(__name__).error(e)
@@ -657,44 +683,111 @@ def timer_resume(context: click.Context):
               type=click.Choice([val.__str__() for val in TimeEntryView.headers()]),
               default=TimeEntryView.headers()[5],
               show_default=True)
+@click.option('--noreduce',
+              help='Do not shorten a long list of entries by reducing on project and description.'
+                   ' By default, tool will add up duration for all entries on a given project and/or'
+                   ' description. Pass this flag to disable',
+              is_flag=True,
+              default=False,
+              show_default=True)
 @click.pass_context
-def timer_list(context: click.Context, description: str, sort_by: str):
+def timer_list(context: click.Context, description: str, sort_by: str, noreduce: bool):
     workspaces = context.obj['data']['workspaces']
     projects = context.obj['data']['projects']
     time_entries = context.obj['data']['time_entries']
 
+    # We can do a quick filter on descriptions, but if none is provided, it is
+    # simply ignored.
     time_entries = TimeEntryFilter.filter_on_description(
         time_entries, description
     )
+
+    # Since the description is ignored, if there are no time entries at this
+    # point, there are no entries in the workspace at all (at least for the
+    # time range; default or specified).
     if not time_entries:
         click.echo(click.style('WARNING', fg='yellow') +
                    f': no entries found in the specified workspace(s).')
         return
 
+    # The final output.
     rows = []
-    for current_workspace in workspaces:
-        reduced_entries = []
-        # get all of the descriptions available
-        descriptions = [entry.description for entry in time_entries]
-        # remove any duplicates
-        descriptions = list(dict.fromkeys(descriptions))
-        for current_description in descriptions:
-            # filter the actual entries on each unique description
-            entries_on_description = TimeEntryFilter.filter_on_description(time_entries, current_description)
-            # reduce down the entries with that description into a single entry
-            combined_entry = functools.reduce(lambda x, y:
-                                              TimeEntryBuilder(x).duration(x.duration + y.duration).build(),
-                                              entries_on_description)
-            reduced_entries.append(combined_entry)
 
-        for entry in reduced_entries:
-            project = ProjectFilter.filter_on_identifier(projects,
-                                                         entry.project_identifier)
-            rows.extend(
-                TimeEntryView(
-                    [entry], project[0] if project else None, current_workspace
-                ).values()
-            )
+    # We reduce by default because it's useful when printing time entries to see how much
+    # time is spent on each project. Typically, there will be many entries in the time span
+    # of 5 days (the default window for entries).
+    if not noreduce:
+        for current_workspace in workspaces:
+            # Filter on the current workspace.
+            workspace_entries = TimeEntryFilter.filter_on_workspace(
+                time_entries, current_workspace)
+
+            # If there are no entries in this workspace, skip.
+            if not workspace_entries:
+                continue
+
+            for project in projects:
+                # Get the entries for the current project.
+                project_entries = TimeEntryFilter.filter_on_project(
+                    workspace_entries, project)
+
+                # Skip ahead if there are no entries.
+                if not project_entries:
+                    continue
+
+                # Get any description for the given project, and then remove duplicates.
+                descriptions = [entry.description for entry in project_entries]
+                descriptions = list(dict.fromkeys(descriptions))
+
+                for description in descriptions:
+                    # The entries matching this description for this project:
+                    description_entries = TimeEntryFilter.filter_on_description(
+                        project_entries, description)
+
+                    # Skip ahead if there are no entries.
+                    if not description_entries:
+                        continue
+
+                    # Sort entries according to last update so that we preserve the most recent update timestamp.
+                    sorted_description_entries = sorted(
+                        description_entries,
+                        key=lambda entry: entry.last_updated,
+                        reverse=True)
+
+                    # Reduce the found entries to a single entry with the total duration.
+                    entry = functools.reduce(
+                        lambda x, y: TimeEntryBuilder(x).duration(x.duration + y.duration).build(),
+                        sorted_description_entries)
+
+                    # Add the entry to our output.
+                    rows.extend(
+                        TimeEntryView([entry], project, current_workspace).values()
+                    )
+
+            # Check for time entries without a project, and just list them as-is.
+            # Reducing these might not be helpful; if there is no project context given
+            # when starting timers, there is no context under which to reduce them down
+            # to a single entry (for example, trying to find out how much time was spent
+            # on a project).
+            for entry in TimeEntryFilter.filter_on_workspace(time_entries, current_workspace):
+                if entry.project_identifier is None:
+                    rows.extend(TimeEntryView([entry], None, current_workspace).values())
+
+    else:
+        # Simple, no reducing.
+        for workspace in workspaces:
+            for project in projects:
+                rows.extend(TimeEntryView(
+                    TimeEntryFilter.filter_on_project(
+                        TimeEntryFilter.filter_on_workspace(time_entries, workspace),
+                        project),
+                    project,
+                    workspace
+                ).values())
+            # Handle cases where project is not defined.
+            for entry in TimeEntryFilter.filter_on_workspace(time_entries, workspace):
+                if entry.project_identifier is None:
+                    rows.extend(TimeEntryView([entry], None, workspace).values())
 
     # Sort by modified date by default.
     sort_by_index = 5

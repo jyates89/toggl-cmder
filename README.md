@@ -1,6 +1,22 @@
-# toggl-cmder
+# togglcmder
 
 This script allows a user to control Toggl via the REST API.
+
+## Features
+* Complete control over Toggl projects, tags, and timers.
+* Easily stop and resume timers.
+    * `togglcmder timers stop`: will stop the current timer.
+    * `togglcmder timers resume`: will resume the most recently stopped timer.
+* Ability to download and view details on workspaces, projects, timers, and tags.
+* Support for Python regex in all search fields, so that you don't need to know the
+  exact name of an item to find it or restart it (or even delete it).
+  * `togglcmder timers --workspace '.*' list`: list all timers in all workspaces.
+  * `togglcmder timers list --description '^Python\s.*$'`: match any timer with
+    Python in the description.
+* Update projects, tags, and timers with various details.
+    * Add a new tag to an old timer.
+    * Remove tags from old timers.
+    * Change the color designation of a project.
 
 ## Installation
 
@@ -138,6 +154,11 @@ Commands:
   update   Update an existing time entry with new details.
 
 ```
+
+######NOTE
+
+You can get more information on sub-commands by running help, for instance:
+`togglcmder timers update --help`
 
 #### Usage Examples
 

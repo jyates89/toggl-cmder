@@ -39,8 +39,8 @@ def sync_or_retrieve_projects(context_obj: dict, workspace: Workspace) -> List[P
     return current_projects
 
 
-def retrieve_project_from_context(context: click.Context) -> Optional[Project]:
-    project = context.obj['data']['project']
+def retrieve_project_from_context(context: dict) -> Optional[Project]:
+    project = context['data']['project']
     return project
 
 
@@ -82,7 +82,7 @@ def projects(context: click.Context, workspace: str):
               default=Project.Color.BLACK.name.lower())
 @click.pass_context
 def project_add(context: click.Context, name: str, color: str):
-    workspace = retrieve_workspace_from_context(context)
+    workspace = retrieve_workspace_from_context(context.obj)
     if not workspace:
         # Workspace filter was not strict enough or there is no default
         # workspace configured.
@@ -141,7 +141,7 @@ def project_add(context: click.Context, name: str, color: str):
 @click.pass_context
 def project_delete(context: click.Context, name: str, color: str,
                    multiple: bool):
-    workspace = retrieve_workspace_from_context(context)
+    workspace = retrieve_workspace_from_context(context.obj)
     if not workspace:
         # Workspace filter was not strict enough or there is no default
         # workspace configured.
@@ -222,7 +222,7 @@ def project_delete(context: click.Context, name: str, color: str,
 @click.pass_context
 def project_update(context: click.Context, old_name: str, old_color: str,
                    new_name: str, new_color: str, multiple: bool):
-    workspace = retrieve_workspace_from_context(context)
+    workspace = retrieve_workspace_from_context(context.obj)
     if not workspace:
         # Workspace filter was not strict enough or there is no default
         # workspace configured.
