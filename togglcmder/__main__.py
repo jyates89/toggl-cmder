@@ -136,7 +136,7 @@ def main(context: click.Context,
         }
     }
     context.obj['config']['api_key'] = None
-    context.obj['config']['default_workspace'] = None
+    context.obj['config']['default_workspace'] = 'Everything'
     context.obj['config']['default_project'] = None
     context.obj['config']['default_tags'] = None
 
