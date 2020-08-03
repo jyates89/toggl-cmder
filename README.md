@@ -40,9 +40,11 @@ using this script.
 1. Login to the Toggl site.
 2. Go to https://toggl.com/app/profile and find the API key at the bottom of the page.
 3. Run the following command to initialize the configuration:
-   1. `togglcmder --api-key b81d43def5cd60acea1e44ad319a7979`
+   1. `togglcmder --api-key <YOUR_API_KEY>`
+4. Sync remote changes to the local database:
+   1. `togglcmder --sync workspaces`
 4. You may test the connection by simply running `togglcmder workspaces`.
-   1. It should at least list the 'Everything' workspace.
+   1. It should at least your personal workspace.
 
 ## Usage
 
