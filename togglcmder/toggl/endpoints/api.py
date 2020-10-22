@@ -8,7 +8,7 @@ from togglcmder.toggl.endpoints.users import Users
 class API(object):
     def __init__(self, version: int = 8):
         self.__version = version
-        self.__url = "https://www.toggl.com/api/v{}".format(
+        self.__url = "https://api.track.toggl.com/api/v{}".format(
             self.__version
         )
 
